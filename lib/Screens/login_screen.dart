@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '/utils/logger.dart';
-import '/services/auth_service.dart'; // adjust import
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:geolocator/geolocator.dart';
+
+import '/utils/logger.dart';
+import '/utils/request_permission.dart';
+import '/services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,10 +19,38 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   final _authService = AuthService();
 
+  Position? _position;
   bool _isLoading = false;
   String? _errorMessage;
 
+  @override
+  void initState() {
+    super.initState();
+    _requestLocationOnce();
+  }
+
+  Future<void> _requestLocationOnce() async {
+    try {
+      final pos = await requestLocationPermission();
+      setState(() {
+        _position = pos;
+      });
+    } catch (e) {
+      logger.e('Location permission denied or error: $e');
+      setState(() {
+        _errorMessage = 'Location permission is required to log in.';
+      });
+    }
+  }
+
   void _onLoginPressed() async {
+    if (_position == null) {
+      setState(() {
+        _errorMessage = 'Location not available. Please grant permission.';
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -29,11 +60,10 @@ class _LoginScreenState extends State<LoginScreen> {
       await _authService.logIn(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
+        location: _position!, // safe to use after null check
       );
-         if(mounted)
-      {
-        context.go('/home');
-      } // navigate to home after login
+
+      if (mounted) context.go('/home');
     } on FirebaseAuthException catch (e) {
       setState(() {
         _errorMessage = e.message;
@@ -51,7 +81,6 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      // This resizes the body when the keyboard appears
       resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: SingleChildScrollView(
@@ -59,14 +88,9 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 🔷 Logo and Title
               Row(
                 children: [
-                  Image.asset(
-                    'assets/logo.png',
-                    width: 60,
-                    height: 60,
-                  ),
+                  Image.asset('assets/logo.png', width: 60, height: 60),
                   const SizedBox(width: 12),
                   const Text(
                     'Smart report',
@@ -78,16 +102,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
               ),
               const SizedBox(height: 40),
-
               const Text(
                 'Login',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 30),
-
               const Text('Email', style: TextStyle(fontSize: 16)),
               const SizedBox(height: 8),
               TextField(
@@ -103,7 +122,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-
               const Text('Password', style: TextStyle(fontSize: 16)),
               const SizedBox(height: 8),
               TextField(
@@ -120,12 +138,17 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-
+              if (_errorMessage != null)
+                Text(
+                  _errorMessage!,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              const SizedBox(height: 10),
               Center(
                 child: InkWell(
                   onTap: _onSignUpPressed,
                   child: const Text(
-                    'Have no account? sign up',
+                    'Have no account? Sign up',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.blue,
@@ -135,19 +158,24 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-
               Center(
                 child: ElevatedButton(
-                  onPressed: _onLoginPressed,
+                  onPressed: _isLoading ? null : _onLoginPressed,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 40,
+                      vertical: 14,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text('Log in'),
+                  child: _isLoading
+                      ? const CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation(Colors.white),
+                        )
+                      : const Text('Log in'),
                 ),
               ),
             ],
