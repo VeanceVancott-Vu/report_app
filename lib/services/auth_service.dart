@@ -1,12 +1,36 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart'; // 👈 Add this
 import '../models/user_model.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 
-class AuthService {
+class AuthService extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  AppUser? _currentAppUser;
+
+  /// 👤 Firebase user (UID, email only)
+  User? get currentUser => _auth.currentUser;
+
+  /// 🔁 Firestore-based user model
+  AppUser? get currentAppUser => _currentAppUser;
+
+  AuthService() {
+    _loadCurrentUser(); // 👈 Automatically check if logged in
+  }
+
+  Future<void> _loadCurrentUser() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      final snapshot = await _firestore.collection('users').doc(user.uid).get();
+      if (snapshot.exists) {
+        _currentAppUser = AppUser.fromMap(snapshot.data()!);
+        notifyListeners(); // 👈 Notify once user is loaded
+      }
+    }
+  }
 
   // 🔐 Sign Up with location
   Future<AppUser> signUp(String email, String password, String dob) async {
@@ -48,6 +72,9 @@ class AuthService {
 
       await _firestore.collection('users').doc(user.uid).set(appUser.toMap());
 
+      _currentAppUser = appUser;
+      notifyListeners(); // 👈 Update UI
+
       return appUser;
     } catch (e) {
       print(e.toString());
@@ -66,6 +93,9 @@ class AuthService {
       password: password,
     );
 
+    final uid = result.user!.uid;
+
+    // Optionally update location
     if (location != null) {
       String? address;
       try {
@@ -78,14 +108,17 @@ class AuthService {
       } catch (e) {
         print("Reverse geocoding failed: $e");
       }
-
-      await _firestore.collection('users').doc(result.user!.uid).set({
-        'latitude': location.latitude,
-        'longitude': location.longitude,
+      await _firestore.collection('users').doc(uid).set({
         'address': address,
         'locationTimestamp': DateTime.now().toIso8601String(),
-        'lastLogin': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
+    }
+
+    // Load AppUser from Firestore
+    final snapshot = await _firestore.collection('users').doc(uid).get();
+    if (snapshot.exists) {
+      _currentAppUser = AppUser.fromMap(snapshot.data()!);
+      notifyListeners(); // 👈 Notify after login
     }
 
     return result;
@@ -94,8 +127,7 @@ class AuthService {
   // 🚪 Log Out
   Future<void> logOut() async {
     await _auth.signOut();
+    _currentAppUser = null;
+    notifyListeners(); // 👈 Clear state
   }
-
-  // 👤 Current User
-  User? get currentUser => _auth.currentUser;
 }

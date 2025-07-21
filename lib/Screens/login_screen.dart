@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:logger/logger.dart';
 
 import '/utils/logger.dart';
 import '/utils/request_permission.dart';
@@ -30,6 +31,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _requestLocationOnce() async {
+        
+
     try {
       final pos = await requestLocationPermission();
       setState(() {
@@ -44,12 +47,16 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _onLoginPressed() async {
-    if (_position == null) {
-      setState(() {
-        _errorMessage = 'Location not available. Please grant permission.';
-      });
-      return;
-    }
+      print("User logged in:");
+    logger.d('User logged in: logger');
+
+    // if (_position == null) {
+    //    print("<Location not null:");
+    //   setState(() {
+    //     _errorMessage = 'Location not available. Please grant permission.';
+    //   });
+    //   return;
+    // }
 
     setState(() {
       _isLoading = true;
@@ -57,13 +64,20 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      await _authService.logIn(
+     final result =  await _authService.logIn(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
         location: _position!, // safe to use after null check
       );
+            print("User logged in: ${result.user?.uid}");
 
-      if (mounted) context.go('/home');
+    logger.d('User logged in: ${result.user?.uid}');
+      if (mounted)
+      {
+        
+        context.go('/home');
+      } 
+    
     } on FirebaseAuthException catch (e) {
       setState(() {
         _errorMessage = e.message;
