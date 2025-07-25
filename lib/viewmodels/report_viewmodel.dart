@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:report_app/utils/logger.dart';
 import '../models/report_model.dart';
 import '../services/report_service.dart';
+import 'package:geocoding/geocoding.dart';
+import '../utils/reverse_geocoding.dart';
 
 class ReportViewModel extends ChangeNotifier {
   final ReportService _reportService;
@@ -45,7 +48,51 @@ class ReportViewModel extends ChangeNotifier {
   /// Upload a new report
   Future<void> addReport(Report report) async {
     _setLoading(true);
+
+
+    // Try Nominatim first (network-based)
+    final address = await fetchAddressFromNominatim(
+      report.location.latitude,
+      report.location.longitude,
+    );
+
+    if (address != null && address.isNotEmpty) {
+      report.location.address = address;
+    } else {
+      // Fallback to Flutter geocoding
+      final placemarks = await placemarkFromCoordinates(
+        report.location.latitude,
+        report.location.longitude,
+      );
+
+      final place = placemarks.first;
+      final resolvedAddress =
+          '${place.street}, ${place.subLocality}, ${place.locality}, ${place.country}';
+
+      report.location.address = resolvedAddress;
+    }
+
+      
+    if ((report.location.latitude == 0 || report.location.longitude == 0) &&
+        report.location.address != null &&
+        report.location.address!.isNotEmpty) {
+      try {
+        final locations = await locationFromAddress(report.location.address!);
+
+        if (locations.isNotEmpty) {
+          final loc = locations.first;
+          report.location.latitude = loc.latitude;
+          report.location.longitude = loc.longitude;
+        }
+      } catch (e) {
+        logger.d('Forward geocoding failed: $e');
+      }
+    }
+
+
+
     try {
+
       await _reportService.uploadReport(report);
       _reports.insert(0, report);
       notifyListeners();

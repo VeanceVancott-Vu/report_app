@@ -5,9 +5,9 @@ enum ReportStatus { Submitted, Processing, Done }
 
 /// Location model
 class ReportLocation {
-  final double latitude;
-  final double longitude;
-  final String? address;
+  double latitude;
+  double longitude;
+  String? address;
 
   ReportLocation({
     required this.latitude,
@@ -27,6 +27,7 @@ class ReportLocation {
         address: json['address'],
       );
 }
+
 
 /// Main Report model
 class Report {
@@ -90,9 +91,9 @@ class Report {
       );
 
 
-      Report copyWithFromMap(Map<String, dynamic> updates) {
+  Report copyWithFromMap(Map<String, dynamic> updates) {
   return Report(
-    reportId: reportId,
+    reportId: updates['reportId']?? reportId,
     type: updates['type'] ?? type,
     description: updates['description'] ?? description,
     imageUrls: List<String>.from(updates['imageUrls'] ?? imageUrls),
