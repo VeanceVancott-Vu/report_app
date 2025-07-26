@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:report_app/utils/cloudinary_upload.dart';
 import 'package:report_app/utils/logger.dart';
 import '../models/report_model.dart';
 import '../services/report_service.dart';
@@ -46,55 +49,73 @@ class ReportViewModel extends ChangeNotifier {
   }
 
   /// Upload a new report
-  Future<void> addReport(Report report) async {
+  Future<void> addReport(Report report, {required List<File> images}) async {
     _setLoading(true);
 
 
-    // Try Nominatim first (network-based)
-    final address = await fetchAddressFromNominatim(
-      report.location.latitude,
-      report.location.longitude,
-    );
-
-    if (address != null && address.isNotEmpty) {
-      report.location.address = address;
-    } else {
-      // Fallback to Flutter geocoding
-      final placemarks = await placemarkFromCoordinates(
+      final address = await fetchAddressFromNominatim(
         report.location.latitude,
         report.location.longitude,
       );
 
-      final place = placemarks.first;
-      final resolvedAddress =
-          '${place.street}, ${place.subLocality}, ${place.locality}, ${place.country}';
+      // ✅ Use Nominatim address if available
+      if (address != null && address.isNotEmpty) {
+        report.location.address = address;
+      } 
+      // ✅ If Nominatim fails AND coordinates are valid, use Flutter Geocoding fallback
+      else if (report.location.latitude != 0.0 &&
+              report.location.longitude != 0.0) {
+        try {
+          final placemarks = await placemarkFromCoordinates(
+            report.location.latitude,
+            report.location.longitude,
+          );
 
-      report.location.address = resolvedAddress;
-    }
+          final place = placemarks.first;
+          final resolvedAddress =
+              '${place.street}, ${place.subLocality}, ${place.locality}, ${place.country}';
 
-      
-    if ((report.location.latitude == 0 || report.location.longitude == 0) &&
-        report.location.address != null &&
-        report.location.address!.isNotEmpty) {
-      try {
-        final locations = await locationFromAddress(report.location.address!);
-
-        if (locations.isNotEmpty) {
-          final loc = locations.first;
-          report.location.latitude = loc.latitude;
-          report.location.longitude = loc.longitude;
+          report.location.address = resolvedAddress;
+        } catch (e) {
+          logger.w("⚠️ Flutter geocoding failed: $e");
         }
-      } catch (e) {
-        logger.d('Forward geocoding failed: $e');
+      } 
+      else {
+        logger.w("⚠️ Invalid coordinates (0.0, 0.0) - skipping reverse geocoding");
       }
-    }
 
+      // If we only have address but no coordinates, perform forward geocoding
+      if ((report.location.latitude == 0.0 || report.location.longitude == 0.0) &&
+          report.location.address != null &&
+          report.location.address!.isNotEmpty) {
+        try {
+          final locations = await locationFromAddress(report.location.address!);
+
+          if (locations.isNotEmpty) {
+            final loc = locations.first;
+            report.location.latitude = loc.latitude;
+            report.location.longitude = loc.longitude;
+          }
+        } catch (e) {
+          logger.d('⚠️ Forward geocoding failed: $e');
+        }
+      }
+
+            
+        
+
+          
+    final imageUrls = await CloudinaryUploader.uploadImages(images);
+
+    final reportWithImages = report.copyWithFromMap({
+      'imageUrls': imageUrls,
+    });
 
 
     try {
-
-      await _reportService.uploadReport(report);
-      _reports.insert(0, report);
+      logger.i(reportWithImages.toString() );
+      await _reportService.uploadReport(reportWithImages);
+      _reports.insert(0, reportWithImages);
       notifyListeners();
     } catch (e) {
       _error = 'Failed to upload report: $e';

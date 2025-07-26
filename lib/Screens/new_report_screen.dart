@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +12,8 @@ import 'package:report_app/viewmodels/report_viewmodel.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:latlong2/latlong.dart';
 import '/utils/map_picker.dart';
+import '/utils/image_picker.dart';
+
 
 final logger = Logger(
   printer: PrettyPrinter(
@@ -35,6 +39,7 @@ class _NewReportScreenState extends State<NewReportScreen> {
   final TextEditingController _manualAddressController = TextEditingController(); // New controller for manual address
   LatLng? _pickedLocation; // User-selected location from map
   String? _locationString; // Formatted lat, lng or geocoded address
+  List<File> _selectedImages = [];
 
   int _descriptionCharCount = 0;
   String? _selectedReportType;
@@ -96,8 +101,8 @@ class _NewReportScreenState extends State<NewReportScreen> {
       createdAt: createdAt,
     );
 
-    logger.d("\uD83D\uDCCB Report Created:\n$report");
-    reportVM.addReport(report);
+    logger.i("\uD83D\uDCCB Report Created:\n$report"+" Image list:\n$_selectedImages");
+    reportVM.addReport(report,images: _selectedImages);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Sending Report: $title')),
@@ -122,11 +127,23 @@ class _NewReportScreenState extends State<NewReportScreen> {
     }
   }
 
-  void _addPhotos() {
+void _addPhotos() async {
+  if (_selectedImages.length >= 10) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Opening gallery/camera to add photos...')),
+      const SnackBar(content: Text("You can only upload up to 10 images.")),
     );
+    return;
   }
+
+  final file = await ImagePickerUtil.showImageSourceDialog(context);
+  if (file != null) {
+    setState(() {
+      _selectedImages.add(file);
+    });
+  }
+}
+
+
 
   Future<String?> _getAddressFromLatLng(LatLng position) async {
     try {
@@ -141,6 +158,8 @@ class _NewReportScreenState extends State<NewReportScreen> {
       return null;
     }
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -314,45 +333,70 @@ class _NewReportScreenState extends State<NewReportScreen> {
         ],
       );
 
-  Widget _mediaPickerRow() => Row(
-        children: [
-          Expanded(
-            child: Container(
-              height: 60,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey[300]!),
+Widget _mediaPickerRow() {
+  return SizedBox(
+    height: 100,
+    child: ListView.separated(
+      scrollDirection: Axis.horizontal,
+      itemCount: _selectedImages.length + 1,
+      separatorBuilder: (_, __) => const SizedBox(width: 10),
+      itemBuilder: (context, index) {
+        if (index < _selectedImages.length) {
+          final file = _selectedImages[index];
+          return Stack(
+            children: [
+              ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                color: Colors.grey[100],
-              ),
-              child: const Center(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.camera_alt_outlined, color: Colors.grey),
-                    SizedBox(width: 8),
-                    Text("No media attached", style: TextStyle(color: Colors.grey)),
-                  ],
+                child: Image.file(
+                  file,
+                  width: 100,
+                  height: 100,
+                  fit: BoxFit.cover,
                 ),
               ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          ElevatedButton.icon(
-            onPressed: _addPhotos,
-            icon: const Icon(Icons.add_a_photo),
-            label: const Text("Add"), // Fixed typo from "Added" to "Add"
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.blueAccent,
-              side: const BorderSide(color: Colors.blueAccent),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+              Positioned(
+                top: 4,
+                right: 4,
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedImages.removeAt(index);
+                    });
+                  },
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.black54,
+                    ),
+                    padding: const EdgeInsets.all(4),
+                    child: const Icon(Icons.close, size: 16, color: Colors.white),
+                  ),
+                ),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ],
+          );
+        } else {
+          return GestureDetector(
+            onTap: _addPhotos,
+            child: Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blueAccent),
+              ),
+              child: const Center(
+                child: Icon(Icons.add_a_photo, size: 30, color: Colors.blueAccent),
+              ),
             ),
-          ),
-        ],
-      );
+          );
+        }
+      },
+    ),
+  );
+}
+
 
   Widget _buildTextInputField({
     required TextEditingController controller,
