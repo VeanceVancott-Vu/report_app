@@ -44,13 +44,38 @@ class _NewReportScreenState extends State<NewReportScreen> {
   int _descriptionCharCount = 0;
   String? _selectedReportType;
 
-  final List<String> _reportTypes = [
-    "Infrastructure",
-    "Waste Management",
-    "Public Safety",
-    "Environment",
-    "Other"
-  ];
+final List<String> _reportTypes = [
+  // 🏗 Infrastructure Issues
+  "Broken equipment",       // damage item
+  "Infrastructure",         // e.g., broken roads, damaged signs
+  "Traffic Signal Issue",   // broken lights, missing signs
+
+  // ♻️ Waste & Utilities
+  "Power Outage",           // street or neighborhood-wide
+  "Water Leakage",          // public pipe leaks or bursts
+  "Sewage Issue",           // manholes, bad smells, overflows
+  "Waste Management",       // overflowing trash, missed collection
+
+  // 🧱 Environment & Public Space
+  "Environment",            // pollution, illegal dumping
+  "Graffiti / Vandalism",   // offensive or gang-related tagging
+  "Noise Disturbance",      // construction or loud parties
+
+  // 🚦 Public Order & Safety
+  "Public Safety",          // street lighting, vandalism
+  "Illegal Parking",        // blocking emergency exits, sidewalks
+
+  // 🐾 Animal-Related
+  "Animal Control",         // stray animals, dead animals
+  "Pest Infestation",       // rodents, mosquitoes in public areas
+
+  // 🚍 Transportation
+  "Public Transportation",  // delays, unsafe buses
+
+  // 🧭 Miscellaneous
+  "Other",                  // catch-all
+];
+
 
   @override
   void initState() {

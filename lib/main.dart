@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-
 import 'Screens/splash_screen.dart';
 import 'Screens/login_screen.dart';
 import 'Screens/signup_screen.dart';
 import 'Screens/home_screen.dart';
 import 'Screens/new_report_screen.dart';
-
-import 'services/auth_service.dart';         // ✅ Import AuthService
+import 'Screens/report_detail_screen.dart'; // Added import
+import 'services/auth_service.dart';
 import 'services/report_service.dart';
 import 'viewmodels/report_viewmodel.dart';
-import 'models/user_model.dart';             // ✅ Import AppUser
+import 'models/user_model.dart';
+import 'models/report_model.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,17 +21,12 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        // ✅ AuthService available app-wide
-      ChangeNotifierProvider<AuthService>(
-        create: (_) => AuthService(),
-      ),
-
-        // ✅ AppUser is provided (can be null before login)
+        ChangeNotifierProvider<AuthService>(
+          create: (_) => AuthService(),
+        ),
         ProxyProvider<AuthService, AppUser?>(
           update: (_, authService, __) => authService.currentAppUser,
         ),
-
-        // ✅ Report ViewModel
         ChangeNotifierProvider(
           create: (_) => ReportViewModel(ReportService()),
         ),
@@ -66,6 +61,13 @@ class MyApp extends StatelessWidget {
       GoRoute(
         path: '/new_report',
         builder: (context, state) => const NewReportScreen(),
+      ),
+      GoRoute(
+        path: '/report/:reportId',
+        builder: (context, state) {
+          final report = state.extra as Report; // Pass report via extra
+          return ReportDetailScreen(report: report);
+        },
       ),
     ],
   );
