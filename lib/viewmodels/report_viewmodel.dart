@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:report_app/utils/cloudinary_upload.dart';
 import 'package:report_app/utils/logger.dart';
@@ -7,6 +8,10 @@ import '../models/report_model.dart';
 import '../services/report_service.dart';
 import 'package:geocoding/geocoding.dart';
 import '../utils/reverse_geocoding.dart';
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'dart:io';
+
 
 class ReportViewModel extends ChangeNotifier {
   final ReportService _reportService;
@@ -160,4 +165,51 @@ class ReportViewModel extends ChangeNotifier {
     _isLoading = value;
     notifyListeners();
   }
+
+
+
+
+   List<String> getImageUrlsForReport(String reportId) {
+    final report = _reports.firstWhere(
+      (report) => report.reportId == reportId,
+      orElse: () => Report(
+        reportId: '',
+        title: '',
+        type: '',
+        description: '',
+        imageUrls: [],
+        location: ReportLocation(latitude: 0, longitude: 0, address: ''),
+        status: ReportStatus.Submitted,
+        createdAt: Timestamp.now(),
+        userId: '',
+      ),
+    );
+    return report.imageUrls;
+  }
+
+  // Downloads an image from a Cloudinary URL and returns the file path
+  Future<String?> downloadImage(String imageUrl) async {
+    logger.d('Attempting to download image: $imageUrl');
+    try {
+      final response = await http.get(Uri.parse(imageUrl));
+      print('HTTP response status: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        // Create a temporary file to store the image
+        final file = File('${Directory.systemTemp.path}/${DateTime.now().millisecondsSinceEpoch}.jpg');
+        print('Saving image to: ${file.path}');
+        await file.writeAsBytes(response.bodyBytes);
+        print('Image saved successfully: ${file.path}');
+        return file.path;
+      } else {
+        logger.d('Failed to download image: HTTP ${response.statusCode}');
+        throw Exception('Failed to download image: ${response.statusCode}');
+      }
+    } catch (e) {
+      logger.d('Error downloading image: $e');
+      return null;
+    }
+  }
+
+
+  
 }
