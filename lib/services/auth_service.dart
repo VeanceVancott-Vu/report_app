@@ -1,14 +1,15 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart'; // 👈 Add this
+import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:logger/logger.dart';
 
 class AuthService extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
+  final logger = Logger();
   AppUser? _currentAppUser;
 
   /// 👤 Firebase user (UID, email only)
@@ -18,22 +19,34 @@ class AuthService extends ChangeNotifier {
   AppUser? get currentAppUser => _currentAppUser;
 
   AuthService() {
-    _loadCurrentUser(); // 👈 Automatically check if logged in
+    _auth.authStateChanges().listen((user) {
+      if (user == null) {
+        _currentAppUser = null;
+        notifyListeners();
+      } else {
+        _loadCurrentUser();
+      }
+    });
   }
 
   Future<void> _loadCurrentUser() async {
     final user = _auth.currentUser;
     if (user != null) {
-      final snapshot = await _firestore.collection('users').doc(user.uid).get();
-      if (snapshot.exists) {
-        _currentAppUser = AppUser.fromMap(snapshot.data()!);
-        notifyListeners(); // 👈 Notify once user is loaded
+      try {
+        final snapshot = await _firestore.collection('users').doc(user.uid).get();
+        if (snapshot.exists) {
+          _currentAppUser = AppUser.fromMap(snapshot.data()!);
+          logger.d('Loaded user: ${user.uid}, role: ${_currentAppUser?.role}');
+          notifyListeners();
+        }
+      } catch (e) {
+        logger.e('Error loading user: $e');
       }
     }
   }
 
-  // 🔐 Sign Up with location
-  Future<AppUser> signUp(String email, String password, String dob) async {
+  // 🔐 Sign Up with location and role
+  Future<AppUser> signUp(String email, String password, String dob, {String role = 'citizen'}) async {
     try {
       UserCredential result = await _auth.createUserWithEmailAndPassword(
         email: email,
@@ -57,7 +70,7 @@ class AuthService extends ChangeNotifier {
         final place = placemarks.first;
         address = '${place.locality}, ${place.administrativeArea}, ${place.country}';
       } catch (e) {
-        print("Reverse geocoding failed: $e");
+        logger.e('Reverse geocoding failed: $e');
       }
 
       final appUser = AppUser(
@@ -68,16 +81,18 @@ class AuthService extends ChangeNotifier {
         longitude: position.longitude,
         address: address,
         locationTimestamp: DateTime.now(),
+        role: role,
       );
 
       await _firestore.collection('users').doc(user.uid).set(appUser.toMap());
 
       _currentAppUser = appUser;
-      notifyListeners(); // 👈 Update UI
+      logger.d('Sign-up successful: ${user.uid}, role: $role');
+      notifyListeners();
 
       return appUser;
     } catch (e) {
-      print(e.toString());
+      logger.e('Sign-up error: $e');
       rethrow;
     }
   }
@@ -88,46 +103,62 @@ class AuthService extends ChangeNotifier {
     required String password,
     Position? location,
   }) async {
-    final result = await _auth.signInWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
+    try {
+      final result = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
-    final uid = result.user!.uid;
+      final uid = result.user!.uid;
 
-    // Optionally update location
-    if (location != null) {
-      String? address;
-      try {
-        List<Placemark> placemarks = await placemarkFromCoordinates(
-          location.latitude,
-          location.longitude,
-        );
-        final place = placemarks.first;
-        address = '${place.locality}, ${place.administrativeArea}, ${place.country}';
-      } catch (e) {
-        print("Reverse geocoding failed: $e");
+      // Optionally update location
+      if (location != null) {
+        String? address;
+        try {
+          List<Placemark> placemarks = await placemarkFromCoordinates(
+            location.latitude,
+            location.longitude,
+          );
+          final place = placemarks.first;
+          address = '${place.locality}, ${place.administrativeArea}, ${place.country}';
+        } catch (e) {
+          logger.e('Reverse geocoding failed: $e');
+        }
+        await _firestore.collection('users').doc(uid).set({
+          'latitude': location.latitude,
+          'longitude': location.longitude,
+          'address': address,
+          'locationTimestamp': DateTime.now().toIso8601String(),
+        }, SetOptions(merge: true));
       }
-      await _firestore.collection('users').doc(uid).set({
-        'address': address,
-        'locationTimestamp': DateTime.now().toIso8601String(),
-      }, SetOptions(merge: true));
-    }
 
-    // Load AppUser from Firestore
-    final snapshot = await _firestore.collection('users').doc(uid).get();
-    if (snapshot.exists) {
-      _currentAppUser = AppUser.fromMap(snapshot.data()!);
-      notifyListeners(); // 👈 Notify after login
-    }
+      // Load AppUser from Firestore
+      final snapshot = await _firestore.collection('users').doc(uid).get();
+      if (snapshot.exists) {
+        _currentAppUser = AppUser.fromMap(snapshot.data()!);
+        logger.d('Login successful: $uid, role: ${_currentAppUser?.role}');
+        notifyListeners();
+      } else {
+        logger.w('User document not found for $uid');
+      }
 
-    return result;
+      return result;
+    } catch (e) {
+      logger.e('Login error: $e');
+      rethrow;
+    }
   }
 
   // 🚪 Log Out
   Future<void> logOut() async {
-    await _auth.signOut();
-    _currentAppUser = null;
-    notifyListeners(); // 👈 Clear state
+    try {
+      await _auth.signOut();
+      _currentAppUser = null;
+      logger.d('Log out successful');
+      notifyListeners();
+    } catch (e) {
+      logger.e('Log out error: $e');
+      rethrow;
+    }
   }
 }

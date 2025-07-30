@@ -7,6 +7,7 @@ class AppUser {
   double? _longitude;
   String? _address;
   DateTime? _locationTimestamp;
+  String _role; // New field: 'citizen' or 'admin'
 
   // Constructor
   AppUser({
@@ -17,13 +18,15 @@ class AppUser {
     double? longitude,
     String? address,
     DateTime? locationTimestamp,
+    String role = 'citizen', // Default to 'citizen'
   })  : _uid = uid,
         _email = email,
         _dob = dob,
         _latitude = latitude,
         _longitude = longitude,
         _address = address,
-        _locationTimestamp = locationTimestamp;
+        _locationTimestamp = locationTimestamp,
+        _role = role;
 
   // Getters
   String get uid => _uid;
@@ -34,6 +37,7 @@ class AppUser {
   double? get longitude => _longitude;
   String? get address => _address;
   DateTime? get locationTimestamp => _locationTimestamp;
+  String get role => _role;
 
   // Setters
   set uid(String value) => _uid = value;
@@ -43,6 +47,7 @@ class AppUser {
   set longitude(double? value) => _longitude = value;
   set address(String? value) => _address = value;
   set locationTimestamp(DateTime? value) => _locationTimestamp = value;
+  set role(String value) => _role = value;
 
   // Convert to Firestore map
   Map<String, dynamic> toMap() {
@@ -54,6 +59,7 @@ class AppUser {
       'longitude': _longitude,
       'address': _address,
       'locationTimestamp': _locationTimestamp?.toIso8601String(),
+      'role': _role, // Add role
     };
   }
 
@@ -69,6 +75,7 @@ class AppUser {
       locationTimestamp: map['locationTimestamp'] != null
           ? DateTime.tryParse(map['locationTimestamp'])
           : null,
+      role: map['role'] ?? 'citizen',
     );
   }
 }
