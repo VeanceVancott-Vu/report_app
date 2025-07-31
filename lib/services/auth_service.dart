@@ -98,7 +98,7 @@ class AuthService extends ChangeNotifier {
   }
 
   // 🔓 Log In with optional location
-  Future<UserCredential> logIn({
+  Future<(UserCredential, AppUser?)> logIn({
     required String email,
     required String password,
     Position? location,
@@ -133,16 +133,18 @@ class AuthService extends ChangeNotifier {
       }
 
       // Load AppUser from Firestore
+      AppUser? loadedUser;
       final snapshot = await _firestore.collection('users').doc(uid).get();
       if (snapshot.exists) {
-        _currentAppUser = AppUser.fromMap(snapshot.data()!);
-        logger.d('Login successful: $uid, role: ${_currentAppUser?.role}');
+        loadedUser = AppUser.fromMap(snapshot.data()!);
+        _currentAppUser = loadedUser;
+        logger.d('Login successful: $uid, role: ${loadedUser.role}');
         notifyListeners();
       } else {
         logger.w('User document not found for $uid');
       }
 
-      return result;
+      return (result, loadedUser); // ✅ Return both
     } catch (e) {
       logger.e('Login error: $e');
       rethrow;
