@@ -78,4 +78,6 @@ class AppUser {
       role: map['role'] ?? 'citizen',
     );
   }
+
+  
 }

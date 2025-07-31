@@ -3,10 +3,11 @@ import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:logger/logger.dart';
-
+import 'package:provider/provider.dart';
 import '/utils/logger.dart';
 import '/utils/request_permission.dart';
 import '/services/auth_service.dart';
+import '/models/user_model.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -31,13 +32,12 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _requestLocationOnce() async {
-        
-
     try {
       final pos = await requestLocationPermission();
       setState(() {
         _position = pos;
       });
+      logger.d('Location obtained: ${pos?.latitude}, ${pos?.longitude}');
     } catch (e) {
       logger.e('Location permission denied or error: $e');
       setState(() {
@@ -47,16 +47,12 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _onLoginPressed() async {
-      print("User logged in:");
-    logger.d('User logged in: logger');
-
-    // if (_position == null) {
-    //    print("<Location not null:");
-    //   setState(() {
-    //     _errorMessage = 'Location not available. Please grant permission.';
-    //   });
-    //   return;
-    // }
+    if (_position == null) {
+      setState(() {
+        _errorMessage = 'Location not available. Please grant permission.';
+      });
+      return;
+    }
 
     setState(() {
       _isLoading = true;
@@ -64,24 +60,35 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-     final result =  await _authService.logIn(
+      await _authService.logIn(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
-        location: _position!, // safe to use after null check
+        // location: _position!, // Uncomment if location is required
       );
-            print("User logged in: ${result.user?.uid}");
 
-    logger.d('User logged in: ${result.user?.uid}');
-      if (mounted)
-      {
-        
-        context.go('/home');
-      } 
-    
+      final user = context.read<AppUser?>();
+      logger.d('User logged in: uid=${user?.userId}, email=${user?.email}, role=${user?.role}');
+
+      if (mounted) {
+        if (user != null) {
+          context.go(user.role == 'admin' ? '/admin' : '/home');
+        } else {
+          logger.w('No AppUser found after login');
+          setState(() {
+            _errorMessage = 'User data not found. Please try again.';
+          });
+        }
+      }
     } on FirebaseAuthException catch (e) {
       setState(() {
         _errorMessage = e.message;
       });
+      logger.e('Login error: $e');
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'An unexpected error occurred: $e';
+      });
+      logger.e('Unexpected login error: $e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -89,6 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _onSignUpPressed() {
     context.go('/signup');
+    logger.d('Navigating to signup screen');
   }
 
   @override
