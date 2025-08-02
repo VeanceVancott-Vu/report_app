@@ -8,6 +8,7 @@ class AppUser {
   String? _address;
   DateTime? _locationTimestamp;
   String _role; // New field: 'citizen' or 'admin'
+  String? _profilePictureUrl; // New field for profile picture URL
 
   // Constructor
   AppUser({
@@ -18,7 +19,8 @@ class AppUser {
     double? longitude,
     String? address,
     DateTime? locationTimestamp,
-    String role = 'citizen', // Default to 'citizen'
+    String role = 'citizen',
+    String? profilePictureUrl,
   })  : _uid = uid,
         _email = email,
         _dob = dob,
@@ -26,7 +28,8 @@ class AppUser {
         _longitude = longitude,
         _address = address,
         _locationTimestamp = locationTimestamp,
-        _role = role;
+        _role = role,
+        _profilePictureUrl = profilePictureUrl;
 
   // Getters
   String get uid => _uid;
@@ -38,6 +41,7 @@ class AppUser {
   String? get address => _address;
   DateTime? get locationTimestamp => _locationTimestamp;
   String get role => _role;
+  String? get profilePictureUrl => _profilePictureUrl;
 
   // Setters
   set uid(String value) => _uid = value;
@@ -48,6 +52,7 @@ class AppUser {
   set address(String? value) => _address = value;
   set locationTimestamp(DateTime? value) => _locationTimestamp = value;
   set role(String value) => _role = value;
+  set profilePictureUrl(String? value) => _profilePictureUrl = value;
 
   // Convert to Firestore map
   Map<String, dynamic> toMap() {
@@ -59,7 +64,8 @@ class AppUser {
       'longitude': _longitude,
       'address': _address,
       'locationTimestamp': _locationTimestamp?.toIso8601String(),
-      'role': _role, // Add role
+      'role': _role,
+      'profilePictureUrl': _profilePictureUrl,
     };
   }
 
@@ -76,8 +82,7 @@ class AppUser {
           ? DateTime.tryParse(map['locationTimestamp'])
           : null,
       role: map['role'] ?? 'citizen',
+      profilePictureUrl: map['profilePictureUrl'],
     );
   }
-
-  
 }

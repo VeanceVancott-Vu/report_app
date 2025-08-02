@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:report_app/Screens/edit_profile_screen.dart';
+import 'package:report_app/Screens/profile_screen.dart';
 import 'Screens/splash_screen.dart';
 import 'Screens/login_screen.dart';
 import 'Screens/signup_screen.dart';
@@ -85,6 +87,18 @@ class MyApp extends StatelessWidget {
         builder: (context, state) {
           final report = state.extra as Report;
           return ReportDetailScreen(report: report);
+        },
+      ),
+          GoRoute(
+        path: '/profile',
+        builder: (context, state) {
+          return ProfileScreen();
+        },
+      ),
+          GoRoute(
+        path: '/edit_profile',
+        builder: (context, state) {
+          return EditProfileScreen();
         },
       ),
       GoRoute(

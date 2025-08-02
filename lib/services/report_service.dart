@@ -162,7 +162,7 @@ class ReportService {
     }
   }
 
-  /// Delete a report (admin only)
+  /// Delete a report
   Future<void> deleteReport(String reportId) async {
     try {
       final user = _auth.currentUser;
@@ -172,8 +172,22 @@ class ReportService {
       }
       final role = await _getUserRole() ?? 'citizen';
       if (role != 'admin') {
-        logger.w('Non-admin user ${user.uid} attempted to delete report $reportId');
-        throw Exception('Only admins can delete reports');
+        // Check if the report belongs to the user
+        final reportSnapshot = await _reportCollection.doc(reportId).get();
+        if (!reportSnapshot.exists) {
+          logger.e('Report $reportId does not exist');
+          throw Exception('Report does not exist');
+        }
+        final reportData = reportSnapshot.data() as Map<String, dynamic>?;
+        if (reportData == null) {
+          logger.e('Report $reportId has no data');
+          throw Exception('Report data is missing');
+        }
+        final reportUserId = reportData['userId'] as String?;
+        if (reportUserId != user.uid) {
+          logger.w('Non-admin user ${user.uid} attempted to delete report $reportId owned by $reportUserId');
+          throw Exception('Only admins or the report owner can delete this report');
+        }
       }
       await _reportCollection.doc(reportId).delete();
       logger.d('Deleted report: $reportId');

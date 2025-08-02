@@ -141,6 +141,18 @@ class ReportViewModel extends ChangeNotifier {
     }
   }
 
+  /// Upload images for a report
+  Future<List<String>> addReportImages(List<File> images) async {
+    try {
+      final imageUrls = await CloudinaryUploader.uploadImages(images);
+      logger.d('Uploaded ${imageUrls.length} images');
+      return imageUrls;
+    } catch (e) {
+      logger.e('Error uploading images: $e');
+      rethrow;
+    }
+  }
+
   /// Update report status (admin only)
   Future<void> updateReportStatus(String reportId, ReportStatus newStatus) async {
     _setLoading(true);
@@ -187,7 +199,7 @@ class ReportViewModel extends ChangeNotifier {
     }
   }
 
-  /// Delete report (admin only)
+  /// Delete report
   Future<void> deleteReport(String reportId) async {
     _setLoading(true);
     try {

@@ -163,4 +163,53 @@ class AuthService extends ChangeNotifier {
       rethrow;
     }
   }
+
+  // ✏️ Update User Profile
+  Future<void> updateUserProfile({
+    required String uid,
+    required String email,
+    String? dob,
+    String? address,
+    double? latitude,
+    double? longitude,
+    String? profilePictureUrl,
+  }) async {
+    try {
+      // Update Firebase Authentication email
+      final user = _auth.currentUser;
+      if (user != null && user.uid == uid) {
+        await user.updateEmail(email);
+        logger.d('Updated email in Firebase Auth: $email');
+      } else {
+        throw Exception('No authenticated user or UID mismatch');
+      }
+
+      // Update Firestore user document
+      final updateData = {
+        'email': email,
+        'dob': dob,
+        'address': address,
+        if (latitude != null) 'latitude': latitude,
+        if (longitude != null) 'longitude': longitude,
+        if (profilePictureUrl != null) 'profilePictureUrl': profilePictureUrl,
+        if (latitude != null || longitude != null) 'locationTimestamp': DateTime.now().toIso8601String(),
+      };
+
+      await _firestore.collection('users').doc(uid).set(
+            updateData,
+            SetOptions(merge: true),
+          );
+
+      // Update local AppUser
+      final snapshot = await _firestore.collection('users').doc(uid).get();
+      if (snapshot.exists) {
+        _currentAppUser = AppUser.fromMap(snapshot.data()!);
+        logger.d('Updated user profile: $uid, email: $email, dob: $dob, address: $address, profilePictureUrl: $profilePictureUrl');
+        notifyListeners();
+      }
+    } catch (e) {
+      logger.e('Error updating user profile: $e');
+      rethrow;
+    }
+  }
 }
