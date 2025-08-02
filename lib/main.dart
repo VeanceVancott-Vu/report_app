@@ -89,7 +89,6 @@ class MyApp extends StatelessWidget {
           return ReportDetailScreen(report: report);
         },
       ),
-<<<<<<< HEAD
           GoRoute(
         path: '/profile',
         builder: (context, state) {
@@ -102,8 +101,6 @@ class MyApp extends StatelessWidget {
           return EditProfileScreen();
         },
       ),
-=======
->>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
       GoRoute(
         path: '/admin/report/:reportId',
         builder: (context, state) {

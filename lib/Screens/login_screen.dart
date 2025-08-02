@@ -61,7 +61,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final authService = context.read<AuthService>();
 
     try {
-<<<<<<< HEAD
       await authService.logIn(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
@@ -69,15 +68,6 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       final user = authService.currentAppUser;
-=======
-      await _authService.logIn(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-        // location: _position!, // Uncomment if location is required
-      );
-
-      final user = context.read<AppUser?>();
->>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
       logger.d('User logged in: uid=${user?.userId}, email=${user?.email}, role=${user?.role}');
 
       if (mounted) {
