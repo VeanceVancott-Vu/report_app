@@ -28,6 +28,7 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedStatus = widget.report.status; // Initialize with report's status
     _titleController.text = widget.report.title;
     _descriptionController.text = widget.report.description;
     logger.d('AdminReportDetailScreen - Report Details:');
