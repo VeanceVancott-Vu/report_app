@@ -234,11 +234,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 const SizedBox(height: 4),
                 Text(
                   timeAgo,
-<<<<<<< HEAD
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-=======
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
->>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                 ),
               ],
             ),
