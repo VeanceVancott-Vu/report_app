@@ -20,14 +20,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   String _location = "Loading location...";
   int _currentIndex = 0;
   final logger = Logger();
-<<<<<<< HEAD
   ReportStatus? _selectedFilter; // For filtering reports by status
   String _filterTitle = "All Reports"; // Dynamic title based on filter
 
-=======
-
-  // Map to associate report types with icons (same as HomeScreen)
->>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
   final Map<String, IconData> _typeToIcon = {
     'broken equipment': Icons.build,
     'infrastructure': Icons.architecture,
@@ -51,10 +46,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   void initState() {
     super.initState();
     _getLocation();
-<<<<<<< HEAD
-=======
-    // Fetch reports using ViewModel
->>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
     context.read<ReportViewModel>().fetchAllReports();
     logger.d('AdminHomeScreen initialized, fetching all reports');
   }
@@ -138,7 +129,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-<<<<<<< HEAD
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.indigo.shade200),
@@ -149,22 +139,13 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               offset: const Offset(0, 2),
             ),
           ],
-=======
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.grey.shade400),
->>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
         ),
         margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-<<<<<<< HEAD
             Icon(icon, size: 30, color: Colors.indigo.shade700),
-=======
-            Icon(icon, size: 30, color: Colors.black87),
->>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -174,29 +155,17 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     title,
                     style: const TextStyle(
                       fontSize: 18,
-<<<<<<< HEAD
                       fontWeight: FontWeight.w700,
                       color: Colors.indigo,
-=======
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black,
->>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Type: $type',
-<<<<<<< HEAD
                     style: TextStyle(
                       fontSize: 14,
                       fontStyle: FontStyle.italic,
                       color: Colors.indigo.shade600,
-=======
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontStyle: FontStyle.italic,
-                      color: Colors.black54,
->>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -296,7 +265,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     // TODO: Implement navigation for other tabs (e.g., Map, Admin Settings)
   }
 
-<<<<<<< HEAD
   void _filterReports(ReportStatus? status) {
     setState(() {
       _selectedFilter = status;
@@ -305,8 +273,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     logger.d('Filtering reports by status: $status, title: $_filterTitle');
   }
 
-=======
->>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
   @override
   Widget build(BuildContext context) {
     final AppUser? user = context.watch<AppUser?>();
@@ -317,7 +283,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-<<<<<<< HEAD
     logger.d("Admin logged in: ${user.email}, role=${user.role}");
 
     return Scaffold(
@@ -336,28 +301,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.menu, color: Colors.white),
-=======
-    logger.d("Admin logged in: ${user.email}");
-
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 1,
-        title: const Text(
-          "Admin Dashboard",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.menu, color: Colors.black),
->>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
           onPressed: () {
             logger.d('Menu button pressed');
             // TODO: Implement admin menu
           },
         ),
-<<<<<<< HEAD
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list, color: Colors.white),
@@ -393,8 +341,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             },
           ),
         ],
-=======
->>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -406,17 +352,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 children: [
                   CircleAvatar(
                     radius: 30,
-<<<<<<< HEAD
                     backgroundColor: Colors.indigo.shade100,
                     child: const Icon(
                       Icons.admin_panel_settings,
                       color: Colors.indigo,
                       size: 30,
                     ),
-=======
-                    backgroundColor: Colors.blueAccent.withOpacity(0.2),
-                    child: const Icon(Icons.admin_panel_settings, color: Colors.blueAccent, size: 30),
->>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -426,41 +367,27 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         Text(
                           "Admin: ${user.email}",
                           style: const TextStyle(
-<<<<<<< HEAD
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: Colors.indigo,
-=======
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87,
->>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                           ),
                         ),
                         const SizedBox(height: 4),
                         Row(
                           children: [
-<<<<<<< HEAD
                             Icon(
                               Icons.location_on,
                               size: 16,
                               color: Colors.indigo.shade600,
                             ),
-=======
-                            Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
->>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
                                 "Location: $_location",
-<<<<<<< HEAD
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: Colors.indigo.shade600,
                                 ),
-=======
-                                style: TextStyle(fontSize: 14, color: Colors.grey[700]),
->>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -473,7 +400,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 ],
               ),
               const SizedBox(height: 30),
-<<<<<<< HEAD
               Text(
                 _filterTitle,
                 style: const TextStyle(
@@ -481,11 +407,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   fontWeight: FontWeight.bold,
                   color: Colors.indigo,
                 ),
-=======
-              const Text(
-                "All Reports",
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87),
->>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
               ),
               const SizedBox(height: 16),
               Consumer<ReportViewModel>(
@@ -499,15 +420,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     logger.d('No reports found');
                     return const Center(child: Text('No reports found.'));
                   } else {
-<<<<<<< HEAD
                     final reports = _selectedFilter == null
                         ? viewModel.reports
                         : viewModel.reports
                             .where((r) => r.status == _selectedFilter)
                             .toList();
-=======
-                    final reports = viewModel.reports;
->>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                     logger.d('Rendering ${reports.length} reports');
                     return ListView.builder(
                       shrinkWrap: true,
@@ -525,12 +442,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           _getTimeAgo(report.createdAt),
                           () {
                             logger.d('Navigating to report detail: ${report.reportId}');
-<<<<<<< HEAD
                             context.go('/admin/report/${report.reportId}',
                                 extra: report);
-=======
-                            context.go('/admin/report/${report.reportId}', extra: report);
->>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                           },
                         );
                       },
@@ -548,19 +461,13 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         selectedFontSize: 12,
         unselectedFontSize: 12,
         iconSize: 28,
-<<<<<<< HEAD
         selectedItemColor: Colors.indigo,
         unselectedItemColor: Colors.grey.shade700,
-=======
-        selectedItemColor: Colors.blueAccent,
-        unselectedItemColor: Colors.grey[700],
->>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
         showUnselectedLabels: true,
         type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.white,
         elevation: 8,
         items: const [
-<<<<<<< HEAD
           BottomNavigationBarItem(
               icon: Icon(Icons.report), label: "Reports"),
           BottomNavigationBarItem(icon: Icon(Icons.map), label: "Map"),
@@ -568,12 +475,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               icon: Icon(Icons.analytics), label: "Analytics"),
           BottomNavigationBarItem(
               icon: Icon(Icons.person), label: "Admin"),
-=======
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: "Reports"),
-          BottomNavigationBarItem(icon: Icon(Icons.map_outlined), label: "Map"),
-          BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), label: "Settings"),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: "Profile"),
->>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
         ],
       ),
     );
