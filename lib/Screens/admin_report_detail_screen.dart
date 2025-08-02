@@ -11,8 +11,12 @@ import 'image_viewer_screen.dart';
 class AdminReportDetailScreen extends StatefulWidget {
   final Report report;
 
+<<<<<<< HEAD
   const AdminReportDetailScreen({Key? key, required this.report})
       : super(key: key);
+=======
+  const AdminReportDetailScreen({Key? key, required this.report}) : super(key: key);
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
 
   @override
   _AdminReportDetailScreenState createState() => _AdminReportDetailScreenState();
@@ -21,16 +25,23 @@ class AdminReportDetailScreen extends StatefulWidget {
 class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
   final logger = Logger();
   late ReportStatus _selectedStatus;
+<<<<<<< HEAD
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   bool _isEditing = false;
+=======
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
 
   @override
   void initState() {
     super.initState();
     _selectedStatus = widget.report.status;
+<<<<<<< HEAD
     _titleController.text = widget.report.title;
     _descriptionController.text = widget.report.description;
+=======
+    // Debug: Log report details
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
     logger.d('AdminReportDetailScreen - Report Details:');
     logger.d('  report: ${widget.report}');
 
@@ -75,6 +86,7 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
     }
   }
 
+<<<<<<< HEAD
   Future<void> _updateStatus(BuildContext context, ReportStatus newStatus) async {
     final viewModel = context.read<ReportViewModel>();
     try {
@@ -90,6 +102,17 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
         setState(() {
           _selectedStatus = newStatus;
         });
+=======
+  Future<void> _updateStatus(BuildContext context) async {
+    final viewModel = context.read<ReportViewModel>();
+    try {
+      if (widget.report.reportId != null) {
+        await viewModel.updateReportStatus(widget.report.reportId!, _selectedStatus);
+        logger.d('Updated report ${widget.report.reportId} status to $_selectedStatus');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Status updated to ${_getDisplayStatus(_selectedStatus)}')),
+        );
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
       } else {
         logger.w('Cannot update status: reportId is null');
         ScaffoldMessenger.of(context).showSnackBar(
@@ -104,6 +127,7 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
     }
   }
 
+<<<<<<< HEAD
   Future<void> _updateReport(BuildContext context) async {
     final viewModel = context.read<ReportViewModel>();
     try {
@@ -133,6 +157,8 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
     }
   }
 
+=======
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
   Future<void> _deleteReport(BuildContext context) async {
     final viewModel = context.read<ReportViewModel>();
     try {
@@ -160,6 +186,7 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final reportViewModel = context.watch<ReportViewModel>();
+<<<<<<< HEAD
     final imageUrls =
         reportViewModel.getImageUrlsForReport(widget.report.reportId ?? '');
     logger.d('Image URLs for reportId ${widget.report.reportId}: $imageUrls');
@@ -180,11 +207,29 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
+=======
+    final imageUrls = reportViewModel.getImageUrlsForReport(widget.report.reportId ?? '');
+    logger.d('Image URLs for reportId ${widget.report.reportId}: $imageUrls');
+
+    return Scaffold(
+      backgroundColor: Colors.grey[100],
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 1,
+        title: const Text(
+          'Report Details',
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
           onPressed: () {
             logger.d('Navigating back to AdminHomeScreen');
             context.go('/admin');
           },
         ),
+<<<<<<< HEAD
         actions: [
           IconButton(
             icon: Icon(_isEditing ? Icons.save : Icons.edit, color: Colors.white),
@@ -199,6 +244,8 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
             },
           ),
         ],
+=======
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -208,7 +255,11 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
             children: [
               // Title Card
               Card(
+<<<<<<< HEAD
                 elevation: 4,
+=======
+                elevation: 2,
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -217,6 +268,7 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+<<<<<<< HEAD
                       _isEditing
                           ? TextField(
                               controller: _titleController,
@@ -245,6 +297,23 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                           fontSize: 16,
                           fontStyle: FontStyle.italic,
                           color: Colors.indigo.shade600,
+=======
+                      Text(
+                        widget.report.title,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Type: ${widget.report.type}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontStyle: FontStyle.italic,
+                          color: Colors.black54,
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                         ),
                       ),
                     ],
@@ -255,7 +324,11 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
 
               // Description Card
               Card(
+<<<<<<< HEAD
                 elevation: 4,
+=======
+                elevation: 2,
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -269,6 +342,7 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
+<<<<<<< HEAD
                           color: Colors.indigo,
                         ),
                       ),
@@ -293,15 +367,33 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                               style: const TextStyle(
                                   fontSize: 16, color: Colors.black87),
                             ),
+=======
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        widget.report.description.isEmpty
+                            ? 'No description provided.'
+                            : widget.report.description,
+                        style: const TextStyle(fontSize: 16, color: Colors.black87),
+                      ),
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 16),
 
+<<<<<<< HEAD
               // Status Card
               Card(
                 elevation: 4,
+=======
+              // Status and Time Card
+              Card(
+                elevation: 2,
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -310,6 +402,7 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+<<<<<<< HEAD
                       const Text(
                         'Status Management',
                         style: TextStyle(
@@ -351,6 +444,66 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                         'Created: ${_getTimeAgo(widget.report.createdAt)}',
                         style: TextStyle(
                             fontSize: 14, color: Colors.grey.shade700),
+=======
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Status',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: _getStatusColor(widget.report.status),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              _getDisplayStatus(widget.report.status),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Created: ${_getTimeAgo(widget.report.createdAt)}',
+                        style: const TextStyle(fontSize: 14, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButton<ReportStatus>(
+                        value: _selectedStatus,
+                        isExpanded: true,
+                        items: ReportStatus.values.map((ReportStatus status) {
+                          return DropdownMenuItem<ReportStatus>(
+                            value: status,
+                            child: Text(_getDisplayStatus(status)),
+                          );
+                        }).toList(),
+                        onChanged: (ReportStatus? newStatus) {
+                          if (newStatus != null) {
+                            setState(() {
+                              _selectedStatus = newStatus;
+                            });
+                            logger.d('Selected new status: $newStatus');
+                            _updateStatus(context);
+                          }
+                        },
+                        hint: const Text('Update Status'),
+                        style: const TextStyle(fontSize: 16, color: Colors.black87),
+                        underline: Container(
+                          height: 2,
+                          color: Colors.blueAccent,
+                        ),
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                       ),
                     ],
                   ),
@@ -360,7 +513,11 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
 
               // Location Card
               Card(
+<<<<<<< HEAD
                 elevation: 4,
+=======
+                elevation: 2,
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -374,7 +531,11 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
+<<<<<<< HEAD
                           color: Colors.indigo,
+=======
+                          color: Colors.black87,
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -382,12 +543,17 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                         widget.report.location.address?.isNotEmpty == true
                             ? widget.report.location.address!
                             : 'Address not available',
+<<<<<<< HEAD
                         style: const TextStyle(
                             fontSize: 16, color: Colors.black87),
+=======
+                        style: const TextStyle(fontSize: 16, color: Colors.black87),
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Latitude: ${widget.report.location.latitude.toStringAsFixed(4)}',
+<<<<<<< HEAD
                         style: const TextStyle(
                             fontSize: 14, color: Colors.black87),
                       ),
@@ -395,6 +561,13 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                         'Longitude: ${widget.report.location.longitude.toStringAsFixed(4)}',
                         style: const TextStyle(
                             fontSize: 14, color: Colors.black87),
+=======
+                        style: const TextStyle(fontSize: 14, color: Colors.black87),
+                      ),
+                      Text(
+                        'Longitude: ${widget.report.location.longitude.toStringAsFixed(4)}',
+                        style: const TextStyle(fontSize: 14, color: Colors.black87),
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                       ),
                     ],
                   ),
@@ -405,7 +578,11 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
               // Images Card
               if (imageUrls.isNotEmpty)
                 Card(
+<<<<<<< HEAD
                   elevation: 4,
+=======
+                  elevation: 2,
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -419,12 +596,20 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
+<<<<<<< HEAD
                             color: Colors.indigo,
+=======
+                            color: Colors.black87,
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                           ),
                         ),
                         const SizedBox(height: 8),
                         SizedBox(
+<<<<<<< HEAD
                           height: 120,
+=======
+                          height: 100,
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
                             itemCount: imageUrls.length,
@@ -432,8 +617,12 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                               logger.d('Rendering image URL: ${imageUrls[index]}');
                               return GestureDetector(
                                 onTap: () {
+<<<<<<< HEAD
                                   logger.d(
                                       'Tapped image at index $index: ${imageUrls[index]}');
+=======
+                                  logger.d('Tapped image at index $index: ${imageUrls[index]}');
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
@@ -450,6 +639,7 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                                     borderRadius: BorderRadius.circular(8),
                                     child: CachedNetworkImage(
                                       imageUrl: imageUrls[index],
+<<<<<<< HEAD
                                       width: 120,
                                       height: 120,
                                       fit: BoxFit.cover,
@@ -458,6 +648,14 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                                       errorWidget: (context, url, error) {
                                         logger.e(
                                             'CachedNetworkImage error for $url: $error');
+=======
+                                      width: 100,
+                                      height: 100,
+                                      fit: BoxFit.cover,
+                                      placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                                      errorWidget: (context, url, error) {
+                                        logger.e('CachedNetworkImage error for $url: $error');
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                                         return const Icon(
                                           Icons.broken_image,
                                           size: 50,
@@ -479,7 +677,11 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
               // Fallback if no images
               if (imageUrls.isEmpty)
                 Card(
+<<<<<<< HEAD
                   elevation: 4,
+=======
+                  elevation: 2,
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -500,13 +702,43 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                 children: [
                   ElevatedButton.icon(
                     onPressed: () {
+<<<<<<< HEAD
+=======
+                      logger.d('Refresh Status button pressed');
+                      setState(() {
+                        // Refresh UI if needed
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Status refreshed')),
+                      );
+                    },
+                    icon: const Icon(Icons.refresh, size: 20),
+                    label: const Text('Refresh Status'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 5,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  ElevatedButton.icon(
+                    onPressed: () {
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                       logger.d('Delete Report button pressed');
                       showDialog(
                         context: context,
                         builder: (context) => AlertDialog(
                           title: const Text('Delete Report'),
+<<<<<<< HEAD
                           content: const Text(
                               'Are you sure you want to delete this report?'),
+=======
+                          content: const Text('Are you sure you want to delete this report?'),
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                           actions: [
                             TextButton(
                               onPressed: () {
@@ -519,8 +751,12 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                                 Navigator.pop(context);
                                 _deleteReport(context);
                               },
+<<<<<<< HEAD
                               child: const Text(
                                   'Delete', style: TextStyle(color: Colors.red)),
+=======
+                              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                             ),
                           ],
                         ),
@@ -531,8 +767,12 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.redAccent,
                       foregroundColor: Colors.white,
+<<<<<<< HEAD
                       padding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 12),
+=======
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+>>>>>>> 4242409f0f5550ed92524603c314442f494e19fb
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),

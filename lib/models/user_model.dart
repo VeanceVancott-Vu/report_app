@@ -85,4 +85,6 @@ class AppUser {
       profilePictureUrl: map['profilePictureUrl'],
     );
   }
+
+  
 }
