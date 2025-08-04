@@ -57,26 +57,20 @@ class ReportService {
     }
   }
 
-  /// Get all reports (admin only) or user-specific reports
-  Future<List<Report>> getAllReports() async {
+Future<List<Report>> getAllReports() async {
     try {
       final user = _auth.currentUser;
       if (user == null) {
         logger.e('No authenticated user');
         throw Exception('User not authenticated');
       }
-      final role = await _getUserRole() ?? 'citizen';
 
-      Query<Object?> query = _reportCollection;
-      if (role != 'admin') {
-        query = query.where('userId', isEqualTo: user.uid);
-      }
-
-      final snapshot = await query.get();
+      // Fetch all reports without user-specific or role-based filtering
+      final snapshot = await _reportCollection.get();
       final reports = snapshot.docs
           .map((doc) => Report.fromJson(doc.data() as Map<String, dynamic>))
           .toList();
-      logger.d('Fetched ${reports.length} reports for user: ${user.uid}, role: $role');
+      logger.d('Fetched ${reports.length} reports for user: ${user.uid}');
       return reports;
     } catch (e) {
       logger.e('Error fetching reports: $e');

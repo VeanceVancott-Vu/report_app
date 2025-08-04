@@ -5,6 +5,7 @@ import 'package:geocoding/geocoding.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../models/user_model.dart';
 import '../viewmodels/report_viewmodel.dart';
 import '../models/report_model.dart';
@@ -292,13 +293,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _deleteReport(BuildContext context, String reportId) async {
     final viewModel = context.read<ReportViewModel>();
     try {
-      final user = context.read<AppUser?>();
-      logger.d('User UID: ${user?.userId}');
-      final reportData = await FirebaseFirestore.instance.collection('reports').doc(reportId).get();
-      logger.d('Report userId: ${reportData.data()?['userId']}');
-
       await viewModel.deleteReport(reportId);
-      logger.d('Deleted report: $reportId');
+      logger.d('Deleted report: $reportId via ReportViewModel');
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Report deleted successfully')),
@@ -359,11 +355,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   CircleAvatar(
                     radius: 30,
                     backgroundColor: Colors.blue.shade100,
-                    child: const Icon(
-                      Icons.person,
-                      color: Colors.blue,
-                      size: 30,
-                    ),
+                    backgroundImage: user.profilePictureUrl != null
+                        ? CachedNetworkImageProvider(user.profilePictureUrl!)
+                        : null,
+                    child: user.profilePictureUrl == null
+                        ? const Icon(
+                            Icons.person,
+                            color: Colors.blue,
+                            size: 30,
+                          )
+                        : null,
                   ),
                   const SizedBox(width: 14),
                   Expanded(

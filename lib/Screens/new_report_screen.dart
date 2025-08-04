@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -13,7 +12,6 @@ import 'package:geocoding/geocoding.dart';
 import 'package:latlong2/latlong.dart';
 import '/utils/map_picker.dart';
 import '/utils/image_picker.dart';
-
 
 final logger = Logger(
   printer: PrettyPrinter(
@@ -36,46 +34,38 @@ class NewReportScreen extends StatefulWidget {
 class _NewReportScreenState extends State<NewReportScreen> {
   final TextEditingController _reportTitleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _manualAddressController = TextEditingController(); // New controller for manual address
-  LatLng? _pickedLocation; // User-selected location from map
-  String? _locationString; // Formatted lat, lng or geocoded address
+  final TextEditingController _manualAddressController = TextEditingController();
+  LatLng? _pickedLocation;
+  String? _locationString;
   List<File> _selectedImages = [];
-
   int _descriptionCharCount = 0;
   String? _selectedReportType;
 
-final List<String> _reportTypes = [
-  // 🏗 Infrastructure Issues
-  "Broken equipment",       // damage item
-  "Infrastructure",         // e.g., broken roads, damaged signs
-  "Traffic Signal Issue",   // broken lights, missing signs
-
-  // ♻️ Waste & Utilities
-  "Power Outage",           // street or neighborhood-wide
-  "Water Leakage",          // public pipe leaks or bursts
-  "Sewage Issue",           // manholes, bad smells, overflows
-  "Waste Management",       // overflowing trash, missed collection
-
-  // 🧱 Environment & Public Space
-  "Environment",            // pollution, illegal dumping
-  "Graffiti / Vandalism",   // offensive or gang-related tagging
-  "Noise Disturbance",      // construction or loud parties
-
-  // 🚦 Public Order & Safety
-  "Public Safety",          // street lighting, vandalism
-  "Illegal Parking",        // blocking emergency exits, sidewalks
-
-  // 🐾 Animal-Related
-  "Animal Control",         // stray animals, dead animals
-  "Pest Infestation",       // rodents, mosquitoes in public areas
-
-  // 🚍 Transportation
-  "Public Transportation",  // delays, unsafe buses
-
-  // 🧭 Miscellaneous
-  "Other",                  // catch-all
-];
-
+  final List<String> _reportTypes = [
+    // 🏗 Infrastructure Issues
+    "Broken equipment",
+    "Infrastructure",
+    "Traffic Signal Issue",
+    // ♻️ Waste & Utilities
+    "Power Outage",
+    "Water Leakage",
+    "Sewage Issue",
+    "Waste Management",
+    // 🧱 Environment & Public Space
+    "Environment",
+    "Graffiti / Vandalism",
+    "Noise Disturbance",
+    // 🚦 Public Order & Safety
+    "Public Safety",
+    "Illegal Parking",
+    // 🐾 Animal-Related
+    "Animal Control",
+    "Pest Infestation",
+    // 🚍 Transportation
+    "Public Transportation",
+    // 🧭 Miscellaneous
+    "Other",
+  ];
 
   @override
   void initState() {
@@ -88,7 +78,7 @@ final List<String> _reportTypes = [
     _reportTitleController.dispose();
     _descriptionController.removeListener(_updateDescriptionCharCount);
     _descriptionController.dispose();
-    _manualAddressController.dispose(); // Dispose new controller
+    _manualAddressController.dispose();
     super.dispose();
   }
 
@@ -98,7 +88,7 @@ final List<String> _reportTypes = [
     });
   }
 
-  void _sendReport(AppUser user) {
+  Future<void> _sendReport(AppUser user) async {
     final reportVM = context.read<ReportViewModel>();
     final title = _reportTitleController.text.trim();
     final description = _descriptionController.text.trim();
@@ -108,10 +98,18 @@ final List<String> _reportTypes = [
         ? _manualAddressController.text.trim()
         : null;
 
+    // Validate input
+    if (title.isEmpty || description.isEmpty || reportType == "Unknown") {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all required fields')),
+      );
+      return;
+    }
+
     final reportLocation = ReportLocation(
       latitude: _pickedLocation?.latitude ?? user.latitude ?? 0.0,
       longitude: _pickedLocation?.longitude ?? user.longitude ?? 0.0,
-      address: manualAddress, // Include manual address
+      address: manualAddress,
     );
 
     final report = Report(
@@ -126,23 +124,33 @@ final List<String> _reportTypes = [
       createdAt: createdAt,
     );
 
-    logger.i("\uD83D\uDCCB Report Created:\n$report"+" Image list:\n$_selectedImages");
-    reportVM.addReport(report,images: _selectedImages);
+    logger.i("\uD83D\uDCCB Report Created:\n$report\nImage list:\n$_selectedImages");
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Sending Report: $title')),
-    );
+    try {
+      await reportVM.addReport(report, images: _selectedImages);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Report "$title" sent successfully')),
+      );
+      // Navigate to HomeScreen after successful upload
+      context.go('/');
+    } catch (e) {
+      logger.e('Failed to send report: $e');
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to send report: $e')),
+      );
+    }
   }
 
   Future<void> _changeLocation() async {
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) =>  FreeMapPicker()),
+      MaterialPageRoute(builder: (_) => FreeMapPicker()),
     );
 
     if (result is LatLng) {
       logger.d("Picked location: ${result.latitude}, ${result.longitude}");
-
       final address = await _getAddressFromLatLng(result);
       logger.d("Picked location to address: $address");
       setState(() {
@@ -152,23 +160,21 @@ final List<String> _reportTypes = [
     }
   }
 
-void _addPhotos() async {
-  if (_selectedImages.length >= 10) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("You can only upload up to 10 images.")),
-    );
-    return;
+  void _addPhotos() async {
+    if (_selectedImages.length >= 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("You can only upload up to 10 images.")),
+      );
+      return;
+    }
+
+    final file = await ImagePickerUtil.showImageSourceDialog(context);
+    if (file != null) {
+      setState(() {
+        _selectedImages.add(file);
+      });
+    }
   }
-
-  final file = await ImagePickerUtil.showImageSourceDialog(context);
-  if (file != null) {
-    setState(() {
-      _selectedImages.add(file);
-    });
-  }
-}
-
-
 
   Future<String?> _getAddressFromLatLng(LatLng position) async {
     try {
@@ -183,8 +189,6 @@ void _addPhotos() async {
       return null;
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -204,7 +208,10 @@ void _addPhotos() async {
         elevation: 2,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            logger.d('Back button pressed on NewReportScreen');
+            context.pop();
+          },
         ),
         title: const Text(
           "New Report",
@@ -358,70 +365,69 @@ void _addPhotos() async {
         ],
       );
 
-Widget _mediaPickerRow() {
-  return SizedBox(
-    height: 100,
-    child: ListView.separated(
-      scrollDirection: Axis.horizontal,
-      itemCount: _selectedImages.length + 1,
-      separatorBuilder: (_, __) => const SizedBox(width: 10),
-      itemBuilder: (context, index) {
-        if (index < _selectedImages.length) {
-          final file = _selectedImages[index];
-          return Stack(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.file(
-                  file,
-                  width: 100,
-                  height: 100,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              Positioned(
-                top: 4,
-                right: 4,
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedImages.removeAt(index);
-                    });
-                  },
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.black54,
-                    ),
-                    padding: const EdgeInsets.all(4),
-                    child: const Icon(Icons.close, size: 16, color: Colors.white),
+  Widget _mediaPickerRow() {
+    return SizedBox(
+      height: 100,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: _selectedImages.length + 1,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          if (index < _selectedImages.length) {
+            final file = _selectedImages[index];
+            return Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.file(
+                    file,
+                    width: 100,
+                    height: 100,
+                    fit: BoxFit.cover,
                   ),
                 ),
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedImages.removeAt(index);
+                      });
+                    },
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.black54,
+                      ),
+                      padding: const EdgeInsets.all(4),
+                      child: const Icon(Icons.close, size: 16, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          } else {
+            return GestureDetector(
+              onTap: _addPhotos,
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blueAccent),
+                ),
+                child: const Center(
+                  child: Icon(Icons.add_a_photo, size: 30, color: Colors.blueAccent),
+                ),
               ),
-            ],
-          );
-        } else {
-          return GestureDetector(
-            onTap: _addPhotos,
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blueAccent),
-              ),
-              child: const Center(
-                child: Icon(Icons.add_a_photo, size: 30, color: Colors.blueAccent),
-              ),
-            ),
-          );
-        }
-      },
-    ),
-  );
-}
-
+            );
+          }
+        },
+      ),
+    );
+  }
 
   Widget _buildTextInputField({
     required TextEditingController controller,

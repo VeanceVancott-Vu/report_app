@@ -66,11 +66,11 @@ class ReportViewModel extends ChangeNotifier {
       // Use Nominatim address if available
       if (address != null && address.isNotEmpty) {
         report = report.copyWithFromMap({
-          'location': ReportLocation(
-            latitude: report.location.latitude,
-            longitude: report.location.longitude,
-            address: address,
-          ),
+          'location': {
+            'latitude': report.location.latitude,
+            'longitude': report.location.longitude,
+            'address': address,
+          },
         });
       } 
       // Fallback to Flutter Geocoding if Nominatim fails and coordinates are valid
@@ -84,11 +84,11 @@ class ReportViewModel extends ChangeNotifier {
           final resolvedAddress =
               '${place.street}, ${place.subLocality}, ${place.locality}, ${place.country}';
           report = report.copyWithFromMap({
-            'location': ReportLocation(
-              latitude: report.location.latitude,
-              longitude: report.location.longitude,
-              address: resolvedAddress,
-            ),
+            'location': {
+              'latitude': report.location.latitude,
+              'longitude': report.location.longitude,
+              'address': resolvedAddress,
+            },
           });
         } catch (e) {
           logger.w('Flutter geocoding failed: $e');
@@ -106,11 +106,11 @@ class ReportViewModel extends ChangeNotifier {
           if (locations.isNotEmpty) {
             final loc = locations.first;
             report = report.copyWithFromMap({
-              'location': ReportLocation(
-                latitude: loc.latitude,
-                longitude: loc.longitude,
-                address: report.location.address,
-              ),
+              'location': {
+                'latitude': loc.latitude,
+                'longitude': loc.longitude,
+                'address': report.location.address,
+              },
             });
           }
         } catch (e) {

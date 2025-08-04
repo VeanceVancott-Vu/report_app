@@ -3,13 +3,14 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:report_app/Screens/edit_profile_screen.dart';
+import 'package:report_app/Screens/map_screen.dart';
 import 'package:report_app/Screens/profile_screen.dart';
 import 'Screens/splash_screen.dart';
 import 'Screens/login_screen.dart';
 import 'Screens/signup_screen.dart';
 import 'Screens/home_screen.dart';
 import 'Screens/new_report_screen.dart';
-import 'Screens/report_detail_screen.dart';
+import 'Screens/report_detail_screen.dart' hide logger;
 import 'Screens/admin_home_screen.dart';
 import 'Screens/admin_report_detail_screen.dart';
 import 'services/auth_service.dart';
@@ -101,6 +102,14 @@ class MyApp extends StatelessWidget {
           return EditProfileScreen();
         },
       ),
+      GoRoute(
+          path: '/map',
+          builder: (context, state) => const MapScreen(),
+        ),
+           GoRoute(
+          path: '/setting',
+          builder: (context, state) => const MapScreen(),
+        ),
       GoRoute(
         path: '/admin/report/:reportId',
         builder: (context, state) {
