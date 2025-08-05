@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:report_app/Screens/admin_map_screen.dart';
+import 'package:report_app/Screens/admin_profile_screens';
 import 'package:report_app/Screens/edit_profile_screen.dart';
 import 'package:report_app/Screens/map_screen.dart';
 import 'package:report_app/Screens/profile_screen.dart';
+import 'package:report_app/Screens/setting_screen.dart';
 import 'Screens/splash_screen.dart';
 import 'Screens/login_screen.dart';
 import 'Screens/signup_screen.dart';
@@ -107,8 +110,8 @@ class MyApp extends StatelessWidget {
           builder: (context, state) => const MapScreen(),
         ),
            GoRoute(
-          path: '/setting',
-          builder: (context, state) => const MapScreen(),
+          path: '/settings',
+          builder: (context, state) => const SettingsScreen(),
         ),
       GoRoute(
         path: '/admin/report/:reportId',
@@ -117,6 +120,14 @@ class MyApp extends StatelessWidget {
           return AdminReportDetailScreen(report: report);
         },
       ),
+       GoRoute(
+          path: '/admin_profile',
+          builder: (context, state) => const ProfileAdminScreen(),
+        ),
+           GoRoute(
+          path: '/admin_map',
+          builder: (context, state) => const AdminMapScreen(),
+        ),
     ],
   );
 

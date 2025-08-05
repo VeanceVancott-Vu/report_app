@@ -262,7 +262,20 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       _currentIndex = index;
     });
     logger.d('Bottom navigation tapped: index $index');
-    // TODO: Implement navigation for other tabs (e.g., Map, Admin Settings)
+    switch (index) {
+      case 0:
+        // Already on HomeScreen (Reports), no navigation needed
+        break;
+      case 1:
+        context.go('/admin_map');
+        break;
+      case 2:
+         context.go('/admin_analytics');
+        break;
+      case 3:
+        context.go('/admin_profile');
+        break;
+    }
   }
 
   void _filterReports(ReportStatus? status) {

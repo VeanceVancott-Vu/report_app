@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:logger/logger.dart';
+import '../services/auth_service.dart'; // Adjust path to your AuthService
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -20,9 +21,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       printTime: true,
     ),
   );
-  int _currentIndex = 2; // Settings tab
+  int _currentIndex = 3; // Settings tab (Admin at index 2)
   bool _notificationsEnabled = true; // Placeholder state for display
   bool _darkModeEnabled = false; // Placeholder state for display
+  final AuthService _authService = AuthService();
 
   void _onNavTap(int index) {
     setState(() {
@@ -31,17 +33,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
     logger.d('Bottom navigation tapped: index $index');
     switch (index) {
       case 0:
-        context.push('/'); // Navigate to HomeScreen
+        context.push('/login'); // Navigate to LoginScreen
         break;
       case 1:
         context.push('/map'); // Navigate to MapScreen
         break;
       case 2:
-        // Already on SettingsScreen, no navigation needed
+        context.push('/admin'); // Navigate to AdminScreen
         break;
       case 3:
-        context.push('/profile'); // Navigate to ProfileScreen
+        // Already on SettingsScreen, no navigation needed
         break;
+    }
+  }
+
+  void _handleLogout(BuildContext context) async {
+    try {
+      await _authService.logOut();
+      if (mounted) {
+        context.go('/login'); // Navigate to LoginScreen after logout
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Logout failed: $e')),
+        );
+      }
     }
   }
 
@@ -56,7 +73,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () {
             logger.d('Back button pressed on SettingsScreen');
-            context.go('/');
+            context.go('/login'); // Navigate to LoginScreen
           },
         ),
         title: const Text(
@@ -150,7 +167,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                   onTap: () {
                     logger.d('Manage Account tapped');
-                    // Placeholder: Could navigate to account settings
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Account settings not implemented')),
                     );
@@ -171,9 +187,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   onTap: () {
                     logger.d('Log Out tapped');
-                    // Placeholder: Could trigger logout
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Logout not implemented')),
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Log Out'),
+                        content: const Text('Are you sure you want to log out?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              _handleLogout(context);
+                            },
+                            child: const Text('Log Out', style: TextStyle(color: Colors.redAccent)),
+                          ),
+                        ],
+                      ),
                     );
                   },
                 ),
@@ -197,8 +229,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.report), label: "Reports"),
           BottomNavigationBarItem(icon: Icon(Icons.map), label: "Map"),
+          BottomNavigationBarItem(icon: Icon(Icons.admin_panel_settings), label: "Admin"),
           BottomNavigationBarItem(icon: Icon(Icons.settings), label: "Settings"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
         ],
       ),
     );

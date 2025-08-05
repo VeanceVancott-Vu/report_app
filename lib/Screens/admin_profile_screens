@@ -1,0 +1,510 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:logger/logger.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/auth_service.dart';
+import '../models/user_model.dart';
+
+class ProfileAdminScreen extends StatefulWidget {
+  const ProfileAdminScreen({Key? key}) : super(key: key);
+
+  @override
+  State<ProfileAdminScreen> createState() => _ProfileAdminScreenState();
+}
+
+class _ProfileAdminScreenState extends State<ProfileAdminScreen> {
+  final Logger logger = Logger(
+    printer: PrettyPrinter(
+      methodCount: 2,
+      errorMethodCount: 8,
+      lineLength: 120,
+      colors: true,
+      printEmojis: true,
+      printTime: true,
+    ),
+  );
+  int _currentIndex = 3; // Admin tab
+  final AuthService _authService = AuthService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  void _onNavTap(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+    logger.d('Bottom navigation tapped: index $index');
+    switch (index) {
+      case 0:
+        context.go('/admin');
+        break;
+      case 1:
+        context.go('/admin_map');
+        break;
+      case 2:
+        context.go('/admin_analytics');
+        break;
+      case 3:
+        // Already on ProfileAdminScreen
+        break;
+    }
+  }
+
+  void _handleLogout(BuildContext context) async {
+    try {
+      await _authService.logOut();
+      if (mounted) {
+        context.go('/login');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Logout failed: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+      logger.e('Logout error: $e');
+    }
+  }
+
+  Future<void> _toggleAdminRole(String uid, String currentRole) async {
+    try {
+      final newRole = currentRole == 'admin' ? 'citizen' : 'admin';
+      await _firestore.collection('users').doc(uid).update({'role': newRole});
+      logger.d('Updated user $uid role to $newRole');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('User role updated to $newRole'),
+          backgroundColor: Colors.indigo.shade700,
+        ),
+      );
+    } catch (e) {
+      logger.e('Error toggling admin role for user $uid: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update role: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  Future<void> _deactivateUser(String uid, String identifier) async {
+    try {
+      await _firestore.collection('users').doc(uid).update({'status': 'inactive'});
+      logger.d('Deactivated user $uid');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('User $identifier deactivated'),
+          backgroundColor: Colors.indigo.shade700,
+        ),
+      );
+    } catch (e) {
+      logger.e('Error deactivating user $uid: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to deactivate user: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  String _formatLocation(AppUser user) {
+    if (user.address != null && user.address!.isNotEmpty) {
+      return user.address!;
+    } else if (user.latitude != null && user.longitude != null) {
+      return 'Lat: ${user.latitude!.toStringAsFixed(4)}, Long: ${user.longitude!.toStringAsFixed(4)}';
+    } else {
+      return 'Location unavailable';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appUser = context.watch<AppUser?>();
+    if (appUser?.role != 'admin') {
+      return const Center(child: Text('Access denied: Admin only'));
+    }
+
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, authSnapshot) {
+        if (authSnapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        return Scaffold(
+          backgroundColor: Colors.indigo.shade50,
+          appBar: AppBar(
+            backgroundColor: Colors.indigo.shade700,
+            elevation: 2,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+              onPressed: () {
+                logger.d('Back button pressed on ProfileAdminScreen');
+                context.go('/admin');
+              },
+            ),
+            title: const Text(
+              'Admin Profile',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 22,
+              ),
+            ),
+            centerTitle: true,
+          ),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Admin Profile Summary
+                  const Text(
+                    'Admin Profile',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.indigo,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.indigo.shade200),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.indigo.shade100.withOpacity(0.3),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 30,
+                              backgroundColor: Colors.indigo.shade100,
+                              child: const Icon(
+                                Icons.admin_panel_settings,
+                                color: Colors.indigo,
+                                size: 30,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Admin: ${appUser!.email}',
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.indigo,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.location_on,
+                                        size: 16,
+                                        color: Colors.indigo.shade600,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Expanded(
+                                        child: Text(
+                                          'Location: ${_formatLocation(appUser)}',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.indigo.shade600,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              logger.d('Edit Profile tapped');
+                              context.push('/edit_profile');
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.indigo.shade700,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text('Edit Profile'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  // User Management
+                  const Text(
+                    'User Management',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.indigo,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  StreamBuilder<QuerySnapshot>(
+                    stream: _firestore.collection('users').snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (snapshot.hasError) {
+                        logger.e('Error fetching users: ${snapshot.error}');
+                        return const Center(child: Text('Error loading users'));
+                      }
+                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                        return const Center(child: Text('No users found'));
+                      }
+
+                      final users = snapshot.data!.docs
+                          .map((doc) => AppUser.fromMap(doc.data() as Map<String, dynamic>))
+                          .toList();
+
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.indigo.shade200),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.indigo.shade100.withOpacity(0.3),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: users.length,
+                          itemBuilder: (context, index) {
+                            final appUser = users[index];
+                            return Container(
+                              decoration: BoxDecoration(
+                                border: Border(
+                                  bottom: BorderSide(
+                                    color: index < users.length - 1
+                                        ? Colors.indigo.shade200
+                                        : Colors.transparent,
+                                  ),
+                                ),
+                              ),
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                title: Text(
+                                  appUser.email,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.indigo,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  'Location: ${_formatLocation(appUser)} • Role: ${appUser.role}',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.indigo.shade600,
+                                  ),
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(
+                                        appUser.role == 'admin' ? Icons.person_remove : Icons.person_add_alt_1,
+                                        color: Colors.indigo.shade700,
+                                      ),
+                                      onPressed: () {
+                                        logger.d('Toggle admin for user ${appUser.uid}');
+                                        _toggleAdminRole(appUser.uid, appUser.role);
+                                      },
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.block, color: Colors.redAccent),
+                                      onPressed: () {
+                                        logger.d('Deactivate user ${appUser.uid} tapped');
+                                        showDialog(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            backgroundColor: Colors.white,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            title: const Text(
+                                              'Deactivate User',
+                                              style: TextStyle(color: Colors.indigo),
+                                            ),
+                                            content: Text(
+                                              'Are you sure you want to deactivate "${appUser.email}"?',
+                                              style: TextStyle(color: Colors.indigo.shade600),
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(context),
+                                                child: const Text(
+                                                  'Cancel',
+                                                  style: TextStyle(color: Colors.indigo),
+                                                ),
+                                              ),
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.pop(context);
+                                                  _deactivateUser(appUser.uid, appUser.email);
+                                                },
+                                                child: const Text(
+                                                  'Deactivate',
+                                                  style: TextStyle(color: Colors.redAccent),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 30),
+                  // Logout
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.indigo.shade200),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.indigo.shade100.withOpacity(0.3),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      leading: const Icon(Icons.logout, color: Colors.redAccent),
+                      title: const Text(
+                        'Log Out',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.indigo,
+                        ),
+                      ),
+                      onTap: () {
+                        logger.d('Log Out tapped');
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            backgroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            title: const Text(
+                              'Log Out',
+                              style: TextStyle(color: Colors.indigo),
+                            ),
+                            content: Text(
+                              'Are you sure you want to log out?',
+                              style: TextStyle(color: Colors.indigo.shade600),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text(
+                                  'Cancel',
+                                  style: TextStyle(color: Colors.indigo),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  _handleLogout(context);
+                                },
+                                child: const Text(
+                                  'Log Out',
+                                  style: TextStyle(color: Colors.redAccent),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          bottomNavigationBar: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: _onNavTap,
+            selectedFontSize: 12,
+            unselectedFontSize: 12,
+            iconSize: 28,
+            selectedItemColor: Colors.indigo,
+            unselectedItemColor: Colors.grey.shade700,
+            showUnselectedLabels: true,
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.white,
+            elevation: 8,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.report),
+                label: "Reports",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.map),
+                label: "Map",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.analytics),
+                label: "Analytics",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person),
+                label: "Admin",
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
