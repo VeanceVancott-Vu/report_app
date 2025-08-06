@@ -82,8 +82,8 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
       case 1:
         // Already on AdminMapScreen
         break;
-      case 2: 
-       context.go('/admin_analytics');
+      case 2:
+        context.go('/admin_analytics');
         break;
       case 3:
         context.go('/admin_profile');
@@ -140,9 +140,9 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Colors.indigo.shade50,
       appBar: AppBar(
-        backgroundColor: Colors.blue.shade700,
+        backgroundColor: Colors.indigo.shade700,
         elevation: 2,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
@@ -311,9 +311,10 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
               left: 16,
               right: 16,
               child: Card(
-                elevation: 4,
+                elevation: 2,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Colors.indigo.shade200),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(12.0),
@@ -421,7 +422,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                                 logger.d('Toggled sort order: $_sortByDateDescending');
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue.shade700,
+                                backgroundColor: Colors.indigo.shade700,
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
@@ -462,9 +463,10 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
             top: _showFilterPanel ? 160 : 16,
             right: 16,
             child: Card(
-              elevation: 4,
+              elevation: 2,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Colors.indigo.shade200),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
@@ -490,11 +492,11 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Total Reports: $totalReports',
-                            style: const TextStyle(fontSize: 14)),
+                            style: TextStyle(fontSize: 14, color: Colors.indigo.shade600)),
                         Text('Unresolved: $unresolvedReports',
-                            style: const TextStyle(fontSize: 14)),
+                            style: TextStyle(fontSize: 14, color: Colors.indigo.shade600)),
                         Text('Top Type: $topType',
-                            style: const TextStyle(fontSize: 14)),
+                            style: TextStyle(fontSize: 14, color: Colors.indigo.shade600)),
                       ],
                     );
                   },
@@ -509,9 +511,10 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
               left: 20,
               right: 20,
               child: Card(
-                elevation: 4,
+                elevation: 2,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Colors.indigo.shade200),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -523,8 +526,8 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                         _selectedReport!.title,
                         style: const TextStyle(
                           fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.indigo,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -533,16 +536,51 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                         style: TextStyle(
                           fontSize: 14,
                           fontStyle: FontStyle.italic,
-                          color: Colors.grey.shade600,
+                          color: Colors.indigo.shade600,
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        'Status: ${_statusToDisplay[_selectedReport!.status]}',
-                        style: TextStyle(
-                          fontSize: 14,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
                           color: _getStatusColor(_selectedReport!.status),
+                          borderRadius: BorderRadius.circular(20),
                         ),
+                        child: Text(
+                          _statusToDisplay[_selectedReport!.status]!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      StreamBuilder<DocumentSnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(_selectedReport!.userId)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData || snapshot.hasError) {
+                            return Text(
+                              'Submitted by: ${_selectedReport!.userId}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.indigo.shade600,
+                              ),
+                            );
+                          }
+                          final userData = snapshot.data!.data() as Map<String, dynamic>?;
+                          final email = userData?['email'] as String? ?? _selectedReport!.userId;
+                          return Text(
+                            'Submitted by: $email',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.indigo.shade600,
+                            ),
+                          );
+                        },
                       ),
                       const SizedBox(height: 12),
                       Align(
@@ -556,7 +594,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
                             });
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue.shade700,
+                            backgroundColor: Colors.indigo.shade700,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -578,7 +616,7 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         selectedFontSize: 12,
         unselectedFontSize: 12,
         iconSize: 28,
-        selectedItemColor: Colors.blue,
+        selectedItemColor: Colors.indigo,
         unselectedItemColor: Colors.grey.shade700,
         showUnselectedLabels: true,
         type: BottomNavigationBarType.fixed,
@@ -587,8 +625,8 @@ class _AdminMapScreenState extends State<AdminMapScreen> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.report), label: "Reports"),
           BottomNavigationBarItem(icon: Icon(Icons.map), label: "Map"),
-          BottomNavigationBarItem(icon: Icon(Icons.admin_panel_settings), label: "Admin"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
+          BottomNavigationBarItem(icon: Icon(Icons.analytics), label: "Analytics"),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Admin"),
         ],
       ),
     );

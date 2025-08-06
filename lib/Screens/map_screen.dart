@@ -4,8 +4,10 @@ import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:logger/logger.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:report_app/viewmodels/report_viewmodel.dart';
 import '../models/report_model.dart';
-import '../viewmodels/report_viewmodel.dart';
+import '../models/user_model.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({Key? key}) : super(key: key);
@@ -20,6 +22,7 @@ class _MapScreenState extends State<MapScreen> {
   Report? _selectedReport;
   String? _selectedType;
   String? _selectedStatus;
+  String? _selectedReportSource; // null for All Reports, "My Reports", or userId
   bool _showFilterPanel = false;
   int _currentIndex = 1; // Map tab
 
@@ -45,9 +48,9 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void initState() {
     super.initState();
-    // Fetch all reports from all users when the screen initializes
+    _selectedReportSource = null; // Default to All Reports
     context.read<ReportViewModel>().fetchAllReports();
-    logger.d('MapScreen initialized, fetching all reports from all users');
+    logger.d('MapScreen initialized, fetching all reports');
   }
 
   void _onNavTap(int index) {
@@ -60,7 +63,7 @@ class _MapScreenState extends State<MapScreen> {
         context.go('/');
         break;
       case 1:
-        // Already on MapScreen, no navigation needed
+        // Already on MapScreen
         break;
       case 2:
         context.go('/settings');
@@ -71,9 +74,36 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  String _getDisplayStatus(ReportStatus status) {
+    switch (status) {
+      case ReportStatus.Submitted:
+        return "Not Yet Resolved";
+      case ReportStatus.Processing:
+        return "Resolving";
+      case ReportStatus.Done:
+        return "Resolved";
+      default:
+        return "Unknown";
+    }
+  }
+
+  Color _getStatusColor(ReportStatus status) {
+    switch (status) {
+      case ReportStatus.Submitted:
+        return Colors.redAccent;
+      case ReportStatus.Processing:
+        return Colors.orangeAccent;
+      case ReportStatus.Done:
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final reportViewModel = context.watch<ReportViewModel>();
+    final appUser = context.watch<AppUser?>();
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -92,12 +122,13 @@ class _MapScreenState extends State<MapScreen> {
         actions: [
           IconButton(
             icon: Icon(
-              Icons.filter_list,
-              color: _showFilterPanel ? Colors.white70 : Colors.white,
+              _showFilterPanel ? Icons.filter_list_off : Icons.filter_list,
+              color: Colors.white,
             ),
             onPressed: () {
               setState(() {
                 _showFilterPanel = !_showFilterPanel;
+                _selectedReport = null; // Close popup when toggling filter
               });
               logger.d('Filter panel toggled: $_showFilterPanel');
             },
@@ -118,23 +149,35 @@ class _MapScreenState extends State<MapScreen> {
                 return const Center(child: Text('No reports found.'));
               }
 
-              // Filter reports to ensure valid coordinates (no user-specific filtering)
+              // Filter reports by coordinates
               var filteredReports = viewModel.reports
                   .where((r) =>
                       r.location.latitude != 0.0 && r.location.longitude != 0.0)
                   .toList();
 
+              // Apply report source filter
+              if (_selectedReportSource == 'My Reports' && appUser != null) {
+                filteredReports = filteredReports
+                    .where((r) => r.userId == appUser.userId)
+                    .toList();
+              } else if (_selectedReportSource != null &&
+                  _selectedReportSource != 'My Reports') {
+                filteredReports = filteredReports
+                    .where((r) => r.userId == _selectedReportSource)
+                    .toList();
+              }
+
               // Apply type filter
-              if (_selectedType != null) {
+              if (_selectedType != null && _selectedType != 'All Types') {
                 filteredReports = filteredReports
                     .where((r) => r.type.toLowerCase() == _selectedType!.toLowerCase())
                     .toList();
               }
 
               // Apply status filter
-              if (_selectedStatus != null) {
+              if (_selectedStatus != null && _selectedStatus != 'All Statuses') {
                 filteredReports = filteredReports
-                    .where((r) => r.status.toString() == _selectedStatus)
+                    .where((r) => _getDisplayStatus(r.status) == _selectedStatus)
                     .toList();
               }
 
@@ -148,10 +191,9 @@ class _MapScreenState extends State<MapScreen> {
                           filteredReports.first.location.latitude,
                           filteredReports.first.location.longitude,
                         )
-                      : const LatLng(0.0, 0.0),
+                      : const LatLng(16.0678, 108.2208), // Default: Hội An
                   initialZoom: 13.0,
                   onTap: (tapPosition, point) {
-                    // Close popup when tapping outside
                     setState(() {
                       _selectedReport = null;
                     });
@@ -162,6 +204,7 @@ class _MapScreenState extends State<MapScreen> {
                     urlTemplate:
                         'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                     subdomains: const ['a', 'b', 'c'],
+                    userAgentPackageName: 'com.example.report_app',
                   ),
                   MarkerLayer(
                     markers: filteredReports.map((report) {
@@ -181,7 +224,8 @@ class _MapScreenState extends State<MapScreen> {
                                 'Marker tapped for report: ${report.reportId}');
                           },
                           child: Icon(
-                            Icons.location_pin,
+                            _typeToIcon[report.type.toLowerCase()] ??
+                                Icons.location_pin,
                             color: _getStatusColor(report.status),
                             size: 40,
                           ),
@@ -196,19 +240,67 @@ class _MapScreenState extends State<MapScreen> {
           // Filter panel
           if (_showFilterPanel)
             Positioned(
-              top: 0,
-              left: 20,
-              right: 20,
+              top: 16,
+              left: 16,
+              right: 16,
               child: Card(
                 elevation: 4,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(12.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('users')
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return const Center(child: CircularProgressIndicator());
+                          }
+                          final users = snapshot.data!.docs
+                              .map((doc) => AppUser.fromMap(doc.data() as Map<String, dynamic>))
+                              .toList();
+                          return DropdownButton<String>(
+                            hint: const Text('Filter by Report Source'),
+                            value: _selectedReportSource,
+                            isExpanded: true,
+                            items: [
+                              const DropdownMenuItem<String>(
+                                value: null,
+                                child: Text('All Reports'),
+                              ),
+                              if (appUser != null)
+                                const DropdownMenuItem<String>(
+                                  value: 'My Reports',
+                                  child: Text('My Reports'),
+                                ),
+                              ...users
+                                  .where((user) =>
+                                      appUser == null || user.uid != appUser.userId)
+                                  .map((user) => DropdownMenuItem<String>(
+                                        value: user.uid,
+                                        child: Text('User: ${user.email}'),
+                                      ))
+                                  .toList()
+                                ..sort((a, b) => (a.child as Text)
+                                    .data!
+                                    .compareTo((b.child as Text).data!)),
+                            ],
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedReportSource = value;
+                                _selectedReport = null;
+                              });
+                              logger.d('Selected report source filter: $value');
+                            },
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
                           Expanded(
@@ -229,13 +321,13 @@ class _MapScreenState extends State<MapScreen> {
                               onChanged: (value) {
                                 setState(() {
                                   _selectedType = value;
-                                  _selectedReport = null; // Close popup on filter change
+                                  _selectedReport = null;
                                 });
                                 logger.d('Selected type filter: $value');
                               },
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: DropdownButton<String>(
                               hint: const Text('Filter by Status'),
@@ -246,15 +338,19 @@ class _MapScreenState extends State<MapScreen> {
                                   value: null,
                                   child: Text('All Statuses'),
                                 ),
-                                ...ReportStatus.values.map((status) => DropdownMenuItem<String>(
-                                      value: status.toString(),
-                                      child: Text(_getDisplayStatus(status)),
+                                ...[
+                                  'Not Yet Resolved',
+                                  'Resolving',
+                                  'Resolved'
+                                ].map((status) => DropdownMenuItem<String>(
+                                      value: status,
+                                      child: Text(status),
                                     )),
                               ],
                               onChanged: (value) {
                                 setState(() {
                                   _selectedStatus = value;
-                                  _selectedReport = null; // Close popup on filter change
+                                  _selectedReport = null;
                                 });
                                 logger.d('Selected status filter: $value');
                               },
@@ -267,7 +363,7 @@ class _MapScreenState extends State<MapScreen> {
                 ),
               ),
             ),
-          // Popup window for selected report
+          // Popup for selected report
           if (_selectedReport != null)
             Positioned(
               bottom: 20,
@@ -309,6 +405,33 @@ class _MapScreenState extends State<MapScreen> {
                           color: _getStatusColor(_selectedReport!.status),
                         ),
                       ),
+                      const SizedBox(height: 4),
+                      StreamBuilder<DocumentSnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(_selectedReport!.userId)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData || snapshot.hasError) {
+                            return Text(
+                              'Submitted by: ${_selectedReport!.userId}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade600,
+                              ),
+                            );
+                          }
+                          final userData = snapshot.data!.data() as Map<String, dynamic>?;
+                          final email = userData?['email'] as String? ?? _selectedReport!.userId;
+                          return Text(
+                            'Submitted by: $email',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                          );
+                        },
+                      ),
                       const SizedBox(height: 12),
                       Align(
                         alignment: Alignment.centerRight,
@@ -320,7 +443,7 @@ class _MapScreenState extends State<MapScreen> {
                                 '/report/${_selectedReport!.reportId}',
                                 extra: _selectedReport);
                             setState(() {
-                              _selectedReport = null; // Close popup
+                              _selectedReport = null;
                             });
                           },
                           style: ElevatedButton.styleFrom(
@@ -360,32 +483,5 @@ class _MapScreenState extends State<MapScreen> {
         ],
       ),
     );
-  }
-
-  // Helper methods for status display and color
-  String _getDisplayStatus(ReportStatus status) {
-    switch (status) {
-      case ReportStatus.Submitted:
-        return "Not yet resolved";
-      case ReportStatus.Processing:
-        return "Resolving";
-      case ReportStatus.Done:
-        return "Resolved";
-      default:
-        return "Unknown";
-    }
-  }
-
-  Color _getStatusColor(ReportStatus status) {
-    switch (status) {
-      case ReportStatus.Submitted:
-        return Colors.redAccent;
-      case ReportStatus.Processing:
-        return Colors.orangeAccent;
-      case ReportStatus.Done:
-        return Colors.green;
-      default:
-        return Colors.grey;
-    }
   }
 }

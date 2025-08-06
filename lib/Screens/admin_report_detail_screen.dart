@@ -21,19 +21,13 @@ class AdminReportDetailScreen extends StatefulWidget {
 class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
   final logger = Logger();
   late ReportStatus _selectedStatus;
-  final _titleController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  bool _isEditing = false;
 
   @override
   void initState() {
     super.initState();
     _selectedStatus = widget.report.status; // Initialize with report's status
-    _titleController.text = widget.report.title;
-    _descriptionController.text = widget.report.description;
     logger.d('AdminReportDetailScreen - Report Details:');
     logger.d('  report: ${widget.report}');
-
   }
 
   String _getTimeAgo(Timestamp createdAt) {
@@ -104,35 +98,6 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
     }
   }
 
-  Future<void> _updateReport(BuildContext context) async {
-    final viewModel = context.read<ReportViewModel>();
-    try {
-      if (widget.report.reportId != null) {
-        await viewModel.updateReport(widget.report.reportId!, {
-          'title': _titleController.text,
-          'description': _descriptionController.text,
-        });
-        logger.d('Updated report ${widget.report.reportId}');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Report updated successfully')),
-        );
-        setState(() {
-          _isEditing = false;
-        });
-      } else {
-        logger.w('Cannot update report: reportId is null');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error: Report ID is missing')),
-        );
-      }
-    } catch (e) {
-      logger.e('Error updating report: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error updating report: $e')),
-      );
-    }
-  }
-
   Future<void> _deleteReport(BuildContext context) async {
     final viewModel = context.read<ReportViewModel>();
     try {
@@ -185,20 +150,6 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
             context.go('/admin');
           },
         ),
-        actions: [
-          IconButton(
-            icon: Icon(_isEditing ? Icons.save : Icons.edit, color: Colors.white),
-            onPressed: () {
-              if (_isEditing) {
-                _updateReport(context);
-              } else {
-                setState(() {
-                  _isEditing = true;
-                });
-              }
-            },
-          ),
-        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -217,27 +168,14 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _isEditing
-                          ? TextField(
-                              controller: _titleController,
-                              style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.indigo,
-                              ),
-                              decoration: const InputDecoration(
-                                labelText: 'Title',
-                                border: OutlineInputBorder(),
-                              ),
-                            )
-                          : Text(
-                              widget.report.title,
-                              style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.indigo,
-                              ),
-                            ),
+                      Text(
+                        widget.report.title,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.indigo,
+                        ),
+                      ),
                       const SizedBox(height: 8),
                       Text(
                         'Type: ${widget.report.type}',
@@ -273,26 +211,13 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      _isEditing
-                          ? TextField(
-                              controller: _descriptionController,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.black87,
-                              ),
-                              maxLines: 5,
-                              decoration: const InputDecoration(
-                                labelText: 'Description',
-                                border: OutlineInputBorder(),
-                              ),
-                            )
-                          : Text(
-                              widget.report.description.isEmpty
-                                  ? 'No description provided.'
-                                  : widget.report.description,
-                              style: const TextStyle(
-                                  fontSize: 16, color: Colors.black87),
-                            ),
+                      Text(
+                        widget.report.description.isEmpty
+                            ? 'No description provided.'
+                            : widget.report.description,
+                        style: const TextStyle(
+                            fontSize: 16, color: Colors.black87),
+                      ),
                     ],
                   ),
                 ),

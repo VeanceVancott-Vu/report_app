@@ -54,7 +54,7 @@ class ReportViewModel extends ChangeNotifier {
   }
 
   /// Upload a new report
-  Future<void> addReport(Report report, {required List<File> images}) async {
+  Future<void> addReport(Report report, {List<File> images = const [], List<File> videos = const []}) async {
     _setLoading(true);
     try {
       // Fetch address using Nominatim
@@ -118,19 +118,21 @@ class ReportViewModel extends ChangeNotifier {
         }
       }
 
-      // Upload images to Cloudinary
+      // Upload images and videos to Cloudinary
       final imageUrls = await CloudinaryUploader.uploadImages(images);
+      final videoUrls = await CloudinaryUploader.uploadVideos(videos);
 
-      // Update report with image URLs
-      final reportWithImages = report.copyWithFromMap({
+      // Update report with image and video URLs
+      final reportWithMedia = report.copyWithFromMap({
         'imageUrls': imageUrls,
+        'videoUrls': videoUrls,
       });
 
       // Upload report to Firestore
-      await _reportService.uploadReport(reportWithImages);
-      _reports.insert(0, reportWithImages);
+      await _reportService.uploadReport(reportWithMedia);
+      _reports.insert(0, reportWithMedia);
       _error = null;
-      logger.i('Uploaded report: ${reportWithImages.reportId}');
+      logger.i('Uploaded report: ${reportWithMedia.reportId} with images: $imageUrls, videos: $videoUrls');
       notifyListeners();
     } catch (e) {
       _error = 'Failed to upload report: $e';
@@ -149,6 +151,18 @@ class ReportViewModel extends ChangeNotifier {
       return imageUrls;
     } catch (e) {
       logger.e('Error uploading images: $e');
+      rethrow;
+    }
+  }
+
+  /// Upload videos for a report
+  Future<List<String>> addReportVideos(List<File> videos) async {
+    try {
+      final videoUrls = await CloudinaryUploader.uploadVideos(videos);
+      logger.d('Uploaded ${videoUrls.length} videos');
+      return videoUrls;
+    } catch (e) {
+      logger.e('Error uploading videos: $e');
       rethrow;
     }
   }
@@ -178,31 +192,62 @@ class ReportViewModel extends ChangeNotifier {
     }
   }
 
-  /// Update existing report
-  Future<void> updateReport(String reportId, Map<String, dynamic> updates) async {
-    _setLoading(true);
-    try {
-      await _reportService.updateReport(reportId, updates);
-      final index = _reports.indexWhere((r) => r.reportId == reportId);
-      if (index != -1) {
-        _reports[index] = _reports[index].copyWithFromMap(updates);
-        _error = null;
-        logger.d('Updated report: $reportId with $updates');
-        notifyListeners();
-      }
-    } catch (e) {
-      _error = 'Failed to update report: $e';
-      logger.e(_error);
-      rethrow;
-    } finally {
-      _setLoading(false);
+ /// Update existing report
+Future<void> updateReport(String reportId, Map<String, dynamic> updates, {List<File> images = const [], List<File> videos = const []}) async {
+  _setLoading(true);
+  try {
+    // Upload new images and videos to Cloudinary
+    final newImageUrls = await CloudinaryUploader.uploadImages(images);
+    final newVideoUrls = await CloudinaryUploader.uploadVideos(videos);
+
+    // Merge new media URLs with existing ones
+    final existingImageUrls = updates['imageUrls'] ?? [];
+    final existingVideoUrls = updates['videoUrls'] ?? [];
+    updates['imageUrls'] = [...existingImageUrls, ...newImageUrls];
+    updates['videoUrls'] = [...existingVideoUrls, ...newVideoUrls];
+
+    // Update report in Firestore
+    await _reportService.updateReport(reportId, updates);
+    final index = _reports.indexWhere((r) => r.reportId == reportId);
+    if (index != -1) {
+      _reports[index] = _reports[index].copyWithFromMap(updates);
+      _error = null;
+      logger.d('Updated report: $reportId with $updates');
+      notifyListeners();
     }
+  } catch (e) {
+    _error = 'Failed to update report: $e';
+    logger.e(_error);
+    rethrow;
+  } finally {
+    _setLoading(false);
   }
+}
 
   /// Delete report
   Future<void> deleteReport(String reportId) async {
     _setLoading(true);
     try {
+      // Optional: Delete media from Cloudinary (requires signed destroy API call)
+      /*
+      final report = _reports.firstWhere((r) => r.reportId == reportId, orElse: () => null);
+      if (report != null) {
+        for (var url in [...report.imageUrls, ...report.videoUrls]) {
+          final publicId = url.split('/').last.split('.').first;
+          final timestamp = (DateTime.now().millisecondsSinceEpoch / 1000).round().toString();
+          final signature = sha1.convert(utf8.encode('public_id=reports/$reportId/$publicId&timestamp=$timestamp${CloudinaryUploader.apiSecret}')).toString();
+          await http.post(
+            Uri.parse('https://api.cloudinary.com/v1_1/${CloudinaryUploader.cloudName}/resources/destroy'),
+            body: {
+              'public_id': 'reports/$reportId/$publicId',
+              'api_key': CloudinaryUploader.apiKey,
+              'timestamp': timestamp,
+              'signature': signature,
+            },
+          );
+        }
+      }
+      */
       await _reportService.deleteReport(reportId);
       _reports.removeWhere((r) => r.reportId == reportId);
       _error = null;
@@ -247,6 +292,7 @@ class ReportViewModel extends ChangeNotifier {
         type: '',
         description: '',
         imageUrls: [],
+        videoUrls: [],
         location: ReportLocation(latitude: 0, longitude: 0, address: ''),
         status: ReportStatus.Submitted,
         createdAt: Timestamp.now(),
@@ -255,6 +301,27 @@ class ReportViewModel extends ChangeNotifier {
     );
     logger.d('Retrieved image URLs for report $reportId: ${report.imageUrls}');
     return report.imageUrls;
+  }
+
+  /// Get video URLs for a report
+  List<String> getVideoUrlsForReport(String reportId) {
+    final report = _reports.firstWhere(
+      (report) => report.reportId == reportId,
+      orElse: () => Report(
+        reportId: '',
+        title: '',
+        type: '',
+        description: '',
+        imageUrls: [],
+        videoUrls: [],
+        location: ReportLocation(latitude: 0, longitude: 0, address: ''),
+        status: ReportStatus.Submitted,
+        createdAt: Timestamp.now(),
+        userId: '',
+      ),
+    );
+    logger.d('Retrieved video URLs for report $reportId: ${report.videoUrls}');
+    return report.videoUrls;
   }
 
   /// Utility to toggle loading

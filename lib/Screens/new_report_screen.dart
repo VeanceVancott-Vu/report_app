@@ -38,32 +38,26 @@ class _NewReportScreenState extends State<NewReportScreen> {
   LatLng? _pickedLocation;
   String? _locationString;
   List<File> _selectedImages = [];
+  List<File> _selectedVideos = [];
   int _descriptionCharCount = 0;
   String? _selectedReportType;
 
   final List<String> _reportTypes = [
-    // 🏗 Infrastructure Issues
     "Broken equipment",
     "Infrastructure",
     "Traffic Signal Issue",
-    // ♻️ Waste & Utilities
     "Power Outage",
     "Water Leakage",
     "Sewage Issue",
     "Waste Management",
-    // 🧱 Environment & Public Space
     "Environment",
     "Graffiti / Vandalism",
     "Noise Disturbance",
-    // 🚦 Public Order & Safety
     "Public Safety",
     "Illegal Parking",
-    // 🐾 Animal-Related
     "Animal Control",
     "Pest Infestation",
-    // 🚍 Transportation
     "Public Transportation",
-    // 🧭 Miscellaneous
     "Other",
   ];
 
@@ -119,21 +113,44 @@ class _NewReportScreenState extends State<NewReportScreen> {
       type: reportType,
       description: description,
       imageUrls: [],
+      videoUrls: [],
       location: reportLocation,
       status: ReportStatus.Submitted,
       createdAt: createdAt,
     );
 
-    logger.i("\uD83D\uDCCB Report Created:\n$report\nImage list:\n$_selectedImages");
+    logger.i("\uD83D\uDCCB Report Created:\n$report\nImages: $_selectedImages\nVideos: $_selectedVideos");
 
     try {
-      await reportVM.addReport(report, images: _selectedImages);
+      await reportVM.addReport(report, images: _selectedImages, videos: _selectedVideos);
       if (!context.mounted) return;
+      
+      // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Report "$title" sent successfully')),
+        SnackBar(
+          content: Text('Report "$title" sent successfully'),
+          duration: const Duration(seconds: 2),
+        ),
       );
-      // Navigate to HomeScreen after successful upload
-      context.go('/');
+
+      // Clear form fields
+      setState(() {
+        _reportTitleController.clear();
+        _descriptionController.clear();
+        _manualAddressController.clear();
+        _selectedImages = [];
+        _selectedVideos = [];
+        _selectedReportType = null;
+        _pickedLocation = null;
+        _locationString = null;
+        _descriptionCharCount = 0;
+      });
+
+      // Navigate to home screen after SnackBar
+      await Future.delayed(const Duration(seconds: 2));
+      if (context.mounted) {
+        context.go('/');
+      }
     } catch (e) {
       logger.e('Failed to send report: $e');
       if (!context.mounted) return;
@@ -160,18 +177,22 @@ class _NewReportScreenState extends State<NewReportScreen> {
     }
   }
 
-  void _addPhotos() async {
-    if (_selectedImages.length >= 10) {
+  Future<void> _addMedia() async {
+    if (_selectedImages.length + _selectedVideos.length >= 10) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("You can only upload up to 10 images.")),
+        const SnackBar(content: Text("You can only upload up to 10 media files.")),
       );
       return;
     }
 
-    final file = await ImagePickerUtil.showImageSourceDialog(context);
+    final file = await ImagePickerUtil.showMediaSourceDialog(context);
     if (file != null) {
       setState(() {
-        _selectedImages.add(file);
+        if (file.path.endsWith('.mp4') || file.path.endsWith('.mov')) {
+          _selectedVideos.add(file);
+        } else {
+          _selectedImages.add(file);
+        }
       });
     }
   }
@@ -370,7 +391,7 @@ class _NewReportScreenState extends State<NewReportScreen> {
       height: 100,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: _selectedImages.length + 1,
+        itemCount: _selectedImages.length + _selectedVideos.length + 1,
         separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
           if (index < _selectedImages.length) {
@@ -407,9 +428,54 @@ class _NewReportScreenState extends State<NewReportScreen> {
                 ),
               ],
             );
+          } else if (index < _selectedImages.length + _selectedVideos.length) {
+            final videoIndex = index - _selectedImages.length;
+            final file = _selectedVideos[videoIndex];
+            return Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.file(
+                    file,
+                    width: 100,
+                    height: 100,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.videocam,
+                      size: 50,
+                      color: Colors.blueAccent,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedVideos.removeAt(videoIndex);
+                      });
+                    },
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.black54,
+                      ),
+                      padding: const EdgeInsets.all(4),
+                      child: const Icon(Icons.close, size: 16, color: Colors.white),
+                    ),
+                  ),
+                ),
+                const Positioned.fill(
+                  child: Center(
+                    child: Icon(Icons.play_circle_outline, size: 40, color: Colors.white70),
+                  ),
+                ),
+              ],
+            );
           } else {
             return GestureDetector(
-              onTap: _addPhotos,
+              onTap: _addMedia,
               child: Container(
                 width: 100,
                 height: 100,

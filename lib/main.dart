@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:report_app/Screens/admin_analytics_screen.dart';
 import 'package:report_app/Screens/admin_map_screen.dart';
 import 'package:report_app/Screens/admin_profile_screens';
 import 'package:report_app/Screens/edit_profile_screen.dart';
+import 'package:report_app/Screens/edit_report_screen.dart';
+import 'package:report_app/Screens/image_viewer_screen.dart';
 import 'package:report_app/Screens/map_screen.dart';
 import 'package:report_app/Screens/profile_screen.dart';
 import 'package:report_app/Screens/setting_screen.dart';
+import 'package:report_app/Screens/video_viewer_screen.dart';
 import 'Screens/splash_screen.dart';
 import 'Screens/login_screen.dart';
 import 'Screens/signup_screen.dart';
@@ -54,7 +58,7 @@ class MyApp extends StatelessWidget {
         path: '/',
         redirect: (context, state) {
           final user = context.read<AppUser?>();
-          logger.d(user);
+        
           if (user == null) {return '/login';}
           else{
               if(user.role =="admin")
@@ -94,6 +98,13 @@ class MyApp extends StatelessWidget {
         },
       ),
           GoRoute(
+      path: '/edit_report/:id',
+      builder: (context, state) {
+        final report = state.extra as Report;
+        return EditReportScreen(report: report);
+      },
+    ),
+          GoRoute(
         path: '/profile',
         builder: (context, state) {
           return ProfileScreen();
@@ -128,6 +139,32 @@ class MyApp extends StatelessWidget {
           path: '/admin_map',
           builder: (context, state) => const AdminMapScreen(),
         ),
+  
+              GoRoute(
+          path: '/admin_analytics',
+          builder: (context, state) => const AdminAnalyticsScreen(),
+        ),
+            GoRoute(
+      path: '/image_viewer',
+      builder: (context, state) {
+        final params = state.extra as Map<String, dynamic>;
+        return ImageViewerScreen(
+          imageUrls: params['imageUrls'] as List<String>,
+          initialIndex: params['initialIndex'] as int,
+        );
+      },
+    ),
+    GoRoute(
+      path: '/video_viewer',
+      builder: (context, state) {
+        final params = state.extra as Map<String, dynamic>;
+        return VideoViewerScreen(
+          videoUrls: params['videoUrls'] as List<String>,
+          initialIndex: params['initialIndex'] as int,
+        );
+      },
+    ),
+    
     ],
   );
 

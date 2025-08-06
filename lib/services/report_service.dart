@@ -135,26 +135,27 @@ Future<List<Report>> getAllReports() async {
     }
   }
 
-  /// Update a report
-  Future<void> updateReport(String reportId, Map<String, dynamic> updates) async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null) {
-        logger.e('No authenticated user');
-        throw Exception('User not authenticated');
-      }
-      final role = await _getUserRole() ?? 'citizen';
-      if (updates.containsKey('userId') && role != 'admin') {
-        logger.w('Non-admin user ${user.uid} attempted to change userId');
-        throw Exception('Unauthorized to change userId');
-      }
-      await _reportCollection.doc(reportId).update(updates);
-      logger.d('Updated report: $reportId with $updates');
-    } catch (e) {
-      logger.e('Error updating report $reportId: $e');
-      rethrow;
+ 
+/// Update a report
+Future<void> updateReport(String reportId, Map<String, dynamic> updates) async {
+  try {
+    final user = _auth.currentUser;
+    if (user == null) {
+      logger.e('No authenticated user');
+      throw Exception('User not authenticated');
     }
+    final role = await _getUserRole() ?? 'citizen';
+    if (role != 'admin') {
+      // Remove userId from updates for non-admin users to prevent unauthorized changes
+      updates = Map<String, dynamic>.from(updates)..remove('userId');
+    }
+    await _reportCollection.doc(reportId).update(updates);
+    logger.d('Updated report: $reportId with $updates');
+  } catch (e) {
+    logger.e('Error updating report $reportId: $e');
+    rethrow;
   }
+}
 
   /// Delete a report
   Future<void> deleteReport(String reportId) async {

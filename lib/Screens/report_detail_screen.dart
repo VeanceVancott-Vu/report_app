@@ -73,7 +73,7 @@ class ReportDetailScreen extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Report deleted successfully')),
       );
-      context.go('/'); // Navigate back to HomeScreen
+      context.go('/');
     } catch (e) {
       logger.e('Error deleting report ${report.reportId}: $e');
       if (!context.mounted) return;
@@ -95,7 +95,7 @@ class ReportDetailScreen extends StatelessWidget {
       );
     }
 
-    final isOwner = user.uid == report.userId; // Check if current user is report owner
+    final isOwner = user.uid == report.userId;
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -106,7 +106,7 @@ class ReportDetailScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () {
             logger.d('Back button pressed on ReportDetailScreen');
-            context.go('/'); // Navigate to HomeScreen
+            context.go('/');
           },
         ),
         title: const Text(
@@ -222,7 +222,7 @@ class ReportDetailScreen extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               // Images
-              if (report.imageUrls.isNotEmpty) ...[
+              if ((report.imageUrls ?? []).isNotEmpty) ...[
                 const Text(
                   'Attached Images',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
@@ -232,18 +232,91 @@ class ReportDetailScreen extends StatelessWidget {
                   height: 100,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
-                    itemCount: report.imageUrls.length,
+                    itemCount: (report.imageUrls ?? []).length,
                     separatorBuilder: (_, __) => const SizedBox(width: 10),
                     itemBuilder: (context, index) {
-                      return ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: CachedNetworkImage(
-                          imageUrl: report.imageUrls[index],
-                          width: 100,
-                          height: 100,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
-                          errorWidget: (context, url, error) => const Icon(Icons.error, color: Colors.red),
+                      return GestureDetector(
+                        onTap: () {
+                          logger.d('Tapped image at index $index for report ${report.reportId}');
+                          context.push('/image_viewer', extra: {
+                            'imageUrls': report.imageUrls ?? [],
+                            'initialIndex': index,
+                          });
+                        },
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: CachedNetworkImage(
+                            imageUrl: (report.imageUrls ?? [])[index],
+                            width: 100,
+                            height: 100,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                            errorWidget: (context, url, error) => const Icon(Icons.error, color: Colors.red),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+              // Videos
+              if ((report.videoUrls ?? []).isNotEmpty) ...[
+                const Text(
+                  'Attached Videos',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 100,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: (report.videoUrls ?? []).length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                    itemBuilder: (context, index) {
+                      final videoUrls = report.videoUrls ?? [];
+                      return GestureDetector(
+                        onTap: () {
+                          logger.d('Tapped video at index $index for report ${report.reportId}');
+                          if (videoUrls.isNotEmpty) {
+                            context.push('/video_viewer', extra: {
+                              'videoUrls': videoUrls,
+                              'initialIndex': index,
+                            });
+                          } else {
+                            logger.w('No video URLs available for report ${report.reportId}');
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('No videos available to view')),
+                            );
+                          }
+                        },
+                        child: Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: CachedNetworkImage(
+                                imageUrl: videoUrls[index].replaceAll(RegExp(r'\.\w+$'), '.jpg'),
+                                width: 100,
+                                height: 100,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                                errorWidget: (context, url, error) => const Icon(
+                                  Icons.videocam,
+                                  size: 50,
+                                  color: Colors.blue,
+                                ),
+                              ),
+                            ),
+                            const Positioned.fill(
+                              child: Center(
+                                child: Icon(
+                                  Icons.play_circle_outline,
+                                  size: 40,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     },
